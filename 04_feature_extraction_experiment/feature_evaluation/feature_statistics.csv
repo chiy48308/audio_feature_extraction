@@ -1,0 +1,5 @@
+,mfcc_mean,mfcc_mean,f0_missing_rate,f0_missing_rate,energy_mean,energy_mean,zcr_mean,zcr_mean
+,mean,std,mean,std,mean,std,mean,std
+category,,,,,,,,
+學生,0.0,0.0,0.0,0.0,0.0,0.0,0.5301,0.5
+教師,0.0,0.0,0.0,0.0,0.0,0.0,0.5188,0.5006
