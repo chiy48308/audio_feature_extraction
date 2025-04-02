@@ -1,4 +1,4 @@
-,mfcc_mean,mfcc_mean,f0_missing_rate,f0_missing_rate,energy_mean,energy_mean,zcr_mean,zcr_mean
+,mfcc_stability,mfcc_stability,f0_quality,f0_quality,energy_stability,energy_stability,zcr_validity,zcr_validity
 ,mean,std,mean,std,mean,std,mean,std
 category,,,,,,,,
 學生,0.0,0.0,0.0,0.0,0.0,0.0,0.5301,0.5

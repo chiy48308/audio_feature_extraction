@@ -14,14 +14,10 @@ def load_and_prepare_data():
     # 將類別轉換為中文
     df['category'] = df['category'].map({'teacher': '教師', 'student': '學生'})
     
-    # 重命名列
-    df = df.rename(columns={
-        'mfcc_stability': 'mfcc_mean',
-        'f0_quality': 'f0_missing_rate',
-        'energy_stability': 'energy_mean',
-        'zcr_validity': 'zcr_mean',
-        'feature_complete': 'feature_integrity'
-    })
+    # 將布爾值轉換為數值
+    bool_columns = ['mfcc_stability', 'f0_quality', 'energy_stability', 'zcr_validity', 'feature_complete']
+    for col in bool_columns:
+        df[col] = df[col].astype(float)
     
     return df
 
@@ -31,11 +27,11 @@ def generate_summary_files(df):
     student_df = df[df['category'] == '學生']
     student_summary = {
         'file_count': len(student_df),
-        'mfcc_stability_rate': f"{(student_df['mfcc_mean'].mean() * 100):.2f}%",
-        'f0_quality_rate': f"{(student_df['f0_missing_rate'].mean() * 100):.2f}%",
-        'energy_stability_rate': f"{(student_df['energy_mean'].mean() * 100):.2f}%",
-        'zcr_rationality_rate': f"{(student_df['zcr_mean'].mean() * 100):.2f}%",
-        'feature_integrity_rate': f"{(student_df['feature_integrity'].mean() * 100):.2f}%"
+        'mfcc_stability_rate': f"{(student_df['mfcc_stability'].mean() * 100):.2f}%",
+        'f0_quality_rate': f"{(student_df['f0_quality'].mean() * 100):.2f}%",
+        'energy_stability_rate': f"{(student_df['energy_stability'].mean() * 100):.2f}%",
+        'zcr_rationality_rate': f"{(student_df['zcr_validity'].mean() * 100):.2f}%",
+        'feature_integrity_rate': f"{(student_df['feature_complete'].mean() * 100):.2f}%"
     }
     
     # 將摘要保存為CSV
@@ -45,11 +41,11 @@ def generate_summary_files(df):
     teacher_df = df[df['category'] == '教師']
     teacher_summary = {
         'file_count': len(teacher_df),
-        'mfcc_stability_rate': f"{(teacher_df['mfcc_mean'].mean() * 100):.2f}%",
-        'f0_quality_rate': f"{(teacher_df['f0_missing_rate'].mean() * 100):.2f}%",
-        'energy_stability_rate': f"{(teacher_df['energy_mean'].mean() * 100):.2f}%",
-        'zcr_rationality_rate': f"{(teacher_df['zcr_mean'].mean() * 100):.2f}%",
-        'feature_integrity_rate': f"{(teacher_df['feature_integrity'].mean() * 100):.2f}%"
+        'mfcc_stability_rate': f"{(teacher_df['mfcc_stability'].mean() * 100):.2f}%",
+        'f0_quality_rate': f"{(teacher_df['f0_quality'].mean() * 100):.2f}%",
+        'energy_stability_rate': f"{(teacher_df['energy_stability'].mean() * 100):.2f}%",
+        'zcr_rationality_rate': f"{(teacher_df['zcr_validity'].mean() * 100):.2f}%",
+        'feature_integrity_rate': f"{(teacher_df['feature_complete'].mean() * 100):.2f}%"
     }
     
     # 將摘要保存為CSV
@@ -66,25 +62,25 @@ def plot_feature_distributions(df):
     fig.suptitle('教師和學生語音特徵分佈對比', fontsize=16)
     
     # MFCC穩定性分佈
-    sns.barplot(x='category', y='mfcc_mean', data=df, ax=axes[0,0])
+    sns.barplot(x='category', y='mfcc_stability', data=df, ax=axes[0,0])
     axes[0,0].set_title('MFCC穩定性分佈')
     axes[0,0].set_xlabel('類別')
     axes[0,0].set_ylabel('穩定性率')
     
     # F0質量分佈
-    sns.barplot(x='category', y='f0_missing_rate', data=df, ax=axes[0,1])
+    sns.barplot(x='category', y='f0_quality', data=df, ax=axes[0,1])
     axes[0,1].set_title('F0質量分佈')
     axes[0,1].set_xlabel('類別')
     axes[0,1].set_ylabel('質量率')
     
     # 能量穩定性分佈
-    sns.barplot(x='category', y='energy_mean', data=df, ax=axes[1,0])
+    sns.barplot(x='category', y='energy_stability', data=df, ax=axes[1,0])
     axes[1,0].set_title('能量穩定性分佈')
     axes[1,0].set_xlabel('類別')
     axes[1,0].set_ylabel('穩定性率')
     
     # ZCR合理性分佈
-    sns.barplot(x='category', y='zcr_mean', data=df, ax=axes[1,1])
+    sns.barplot(x='category', y='zcr_validity', data=df, ax=axes[1,1])
     axes[1,1].set_title('過零率合理性分佈')
     axes[1,1].set_xlabel('類別')
     axes[1,1].set_ylabel('合理性率')
@@ -96,7 +92,7 @@ def plot_feature_distributions(df):
 def plot_feature_correlations(df):
     """繪製特徵相關性熱圖"""
     # 選擇數值型特徵
-    numeric_features = ['mfcc_mean', 'f0_missing_rate', 'energy_mean', 'zcr_mean']
+    numeric_features = ['mfcc_stability', 'f0_quality', 'energy_stability', 'zcr_validity']
     
     # 分別計算教師和學生的相關性
     teacher_corr = df[df['category'] == '教師'][numeric_features].corr()
@@ -121,10 +117,10 @@ def plot_feature_statistics(df):
     """繪製特徵統計圖"""
     # 計算每個類別的統計數據
     stats = df.groupby('category').agg({
-        'mfcc_mean': ['mean', 'std'],
-        'f0_missing_rate': ['mean', 'std'],
-        'energy_mean': ['mean', 'std'],
-        'zcr_mean': ['mean', 'std']
+        'mfcc_stability': ['mean', 'std'],
+        'f0_quality': ['mean', 'std'],
+        'energy_stability': ['mean', 'std'],
+        'zcr_validity': ['mean', 'std']
     }).round(4)
     
     # 保存統計數據
@@ -134,7 +130,7 @@ def plot_feature_statistics(df):
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
     fig.suptitle('教師和學生語音特徵統計對比', fontsize=16)
     
-    features = ['mfcc_mean', 'f0_missing_rate', 'energy_mean', 'zcr_mean']
+    features = ['mfcc_stability', 'f0_quality', 'energy_stability', 'zcr_validity']
     titles = ['MFCC穩定性', 'F0質量', '能量穩定性', '過零率合理性']
     
     for i, (feature, title) in enumerate(zip(features, titles)):
