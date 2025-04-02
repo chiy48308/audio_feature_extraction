@@ -1,2 +1,13 @@
-file_count,mfcc_mean_range,mfcc_std_range,mfcc_stability_rate,f0_missing_rate_avg,f0_quality_rate,energy_mean_range,energy_std_range,energy_stability_rate,zcr_mean_range,zcr_rationality_rate,feature_integrity_rate
-111,-72.183 to -14.996,3.607 to 32.107,100.00%,82.82%,21.62%,7.04e-06 to 2.05e-01,4.04e-07 to 1.44e-01,100.00%,0.050 to 0.650,27.03%,100.00%
+指標,值
+file_count,111
+mfcc_mean_range,-47.028 to -11.914
+mfcc_std_range,66.773 to 209.656
+mfcc_stability_rate,0.00%
+f0_missing_rate_avg,81.52%
+f0_quality_rate,23.42%
+energy_mean_range,1.05e-05 to 9.46e+03
+energy_std_range,3.28e-10 to 1.26e-01
+energy_stability_rate,100.00%
+zcr_mean_range,0.031 to 0.177
+zcr_rationality_rate,86.49%
+feature_integrity_rate,100.00%
