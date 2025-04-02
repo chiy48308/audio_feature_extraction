@@ -198,6 +198,77 @@ feature_integrity = evaluation['feature_integrity']
 - 能量穩定性：評估能量特徵的變化程度
 - 特徵完整性：評估所有特徵的提取質量
 
+## 實際應用場景
+
+### 1. 語音識別預處理
+- 使用 MFCC 特徵進行語音識別的特徵提取
+- 推薦參數設置：
+  ```python
+  extractor = FeatureExtractor(
+      sr=16000,
+      n_mfcc=13,
+      frame_length=0.025,
+      frame_shift=0.010
+  )
+  ```
+
+### 2. 音樂分析
+- 使用基頻（F0）和能量特徵進行音樂旋律分析
+- 推薦參數設置：
+  ```python
+  extractor = FeatureExtractor(
+      sr=44100,
+      pre_emphasis=0.97,
+      frame_length=0.050,
+      frame_shift=0.025
+  )
+  ```
+
+### 3. 情感識別
+- 結合所有特徵進行語音情感分析
+- 推薦使用批量處理功能進行大規模數據分析
+
+## 常見問題解決方案
+
+### 1. 特徵提取效果不佳
+- 檢查音頻採樣率是否合適
+- 確認預加重係數設置
+- 調整幀長和幀移參數
+- 使用特徵評估指標進行質量檢查
+
+### 2. 處理速度優化
+- 使用批量處理功能
+- 減少不必要的特徵計算
+- 考慮使用多進程處理
+```python
+import multiprocessing as mp
+from functools import partial
+
+def parallel_process(audio_files, n_processes=mp.cpu_count()):
+    with mp.Pool(n_processes) as pool:
+        results = pool.map(process_single_file, audio_files)
+    return results
+```
+
+### 3. 記憶體使用優化
+- 使用生成器處理大型數據集
+- 及時釋放不需要的數據
+- 使用適當的數據類型
+
+### 4. 特殊音頻處理
+- 噪音環境：增加預處理步驟
+- 低質量錄音：調整特徵提取參數
+- 特殊採樣率：使用重採樣功能
+
+## 貢獻指南
+
+歡迎提交問題和改進建議！請遵循以下步驟：
+1. Fork 本專案
+2. 創建您的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交您的更改 (`git commit -m '添加一些特性'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 開啟一個 Pull Request
+
 ## 許可證
 
 本項目採用MIT許可證。詳見[LICENSE](LICENSE)文件。 
