@@ -1,0 +1,40 @@
+# 音訊處理參數
+audio:
+  sample_rate: 16000
+  channels: 1
+  duration: null  # 設置為 null 表示處理整個音檔
+
+# VAD 參數
+vad:
+  aggressiveness: 3  # 0-3，數值越大越嚴格
+  frame_duration: 30  # 毫秒
+  min_speech_duration: 0.3  # 秒
+  max_speech_duration: 10.0  # 秒
+  min_silence_duration: 0.3  # 秒
+
+# 降噪參數
+noise_reduction:
+  method: "wiener"  # 可選："wiener" 或 "spectral"
+  stationary: True
+  prop_decrease: 0.95
+  n_fft: 2048
+  win_length: 2048
+  hop_length: 512
+
+# 音量分析參數
+volume:
+  reference_level: -23.0  # LUFS
+  window_size: 0.4  # 秒
+  hop_size: 0.1  # 秒
+
+# 輸出設定
+output:
+  base_dir: "processed_audio"
+  subdirs:
+    vad: "vad_results"
+    denoised: "denoised"
+    normalized: "normalized"
+  formats:
+    audio: "wav"
+    stats: "csv"
+    plots: "png" 

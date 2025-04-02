@@ -1,0 +1,22 @@
+# 基礎音訊處理套件
+numpy>=1.24.0
+scipy>=1.10.0
+librosa>=0.10.0
+soundfile>=0.12.1
+
+# 語音活動檢測套件
+webrtcvad>=2.0.10
+pyannote.audio>=3.1.1
+
+# 音訊降噪套件
+noisereduce>=2.0.1
+sounddevice>=0.4.6
+
+# 音量分析套件
+pyloudnorm>=0.1.1
+pandas>=2.0.0
+matplotlib>=3.7.0
+
+# 其他工具套件
+tqdm>=4.65.0
+PyYAML>=6.0.1 
