@@ -1,0 +1,2 @@
+,file_count,mfcc_mean_range,mfcc_std_range,mfcc_stability_rate,f0_missing_rate_avg,f0_quality_rate,energy_mean_range,energy_std_range,energy_stability_rate,zcr_mean_range,zcr_rationality_rate,feature_integrity_rate
+0,111,-67.295 to -22.825,21.246 to 37.803,100.00%,53.16%,50.45%,1.20e-03 to 6.10e-02,3.25e-03 to 5.10e-02,97.30%,0.025 to 0.405,100.00%,100.00%
