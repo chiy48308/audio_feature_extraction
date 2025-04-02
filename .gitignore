@@ -1,0 +1,45 @@
+# 音頻文件
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.m4a
+*.aac
+
+# 數據文件
+*.csv
+*.xlsx
+*.xls
+*.db
+*.sqlite
+
+# 預處理和輸出文件
+processed_audio/
+preprocessed/
+output/
+results/
+vad_experiment_results/
+audio_analysis_results/
+
+# Python 虛擬環境
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# 系統文件
+.DS_Store
+.env
+
+# 大型模型文件
+pretrained_models/
+*.pt
+*.pth
+*.ckpt
+*.model
+
+# 臨時文件
+temp/
+tmp/
+*.tmp 
