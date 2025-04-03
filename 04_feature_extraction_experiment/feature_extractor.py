@@ -58,9 +58,7 @@ class AudioFeatureExtractor:
         try:
             # 預處理音頻
             y = self.preprocess_audio(audio_path)
-            if y is None:
-                return None
-                
+            
             # 提取MFCC特徵
             mfcc = librosa.feature.mfcc(
                 y=y,
@@ -79,7 +77,24 @@ class AudioFeatureExtractor:
             # 平滑處理
             mfcc = scipy.signal.medfilt(mfcc, kernel_size=(1, 5))
             
-            return mfcc
+            # 計算統計特徵
+            mfcc_mean = np.mean(mfcc)
+            mfcc_std = np.std(mfcc)
+            mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
+            
+            # 評估特徵穩定性
+            mfcc_stability = mfcc_cv < 0.2
+            mfcc_range_valid = -100 <= mfcc_mean <= 0
+            mfcc_std_valid = mfcc_std < 20
+            
+            return {
+                'mfcc_mean': mfcc_mean,
+                'mfcc_std': mfcc_std,
+                'mfcc_cv': mfcc_cv,
+                'mfcc_stability': mfcc_stability,
+                'mfcc_range_valid': mfcc_range_valid,
+                'mfcc_std_valid': mfcc_std_valid
+            }
         except Exception as e:
             print(f"MFCC提取錯誤 {audio_path}: {str(e)}")
             return None
