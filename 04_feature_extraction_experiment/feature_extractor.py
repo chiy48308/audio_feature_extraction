@@ -27,23 +27,23 @@ class AudioFeatureExtractor:
             y, sr = librosa.load(audio_path, sr=self.sr)
             
             # 降噪（增加強度）
-            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.95)
+            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.98)
             
             # 預加重濾波
-            y = librosa.effects.preemphasis(y, coef=0.98)
+            y = librosa.effects.preemphasis(y, coef=0.99)
             
             # 音頻正規化
             y = librosa.util.normalize(y)
             
             # 高通濾波（調整截止頻率）
             nyquist = sr / 2
-            cutoff = 500 / nyquist
+            cutoff = 600 / nyquist
             b, a = signal.butter(8, cutoff, btype='high')
             y = signal.filtfilt(b, a, y)
             
             # 分段處理
-            frame_length = 2048
-            hop_length = 512
+            frame_length = 4096
+            hop_length = 1024
             frames = librosa.util.frame(y, frame_length=frame_length, hop_length=hop_length)
             frames = librosa.util.normalize(frames, axis=0)
             y = librosa.util.fix_length(frames.mean(axis=1), size=len(y))
@@ -66,9 +66,9 @@ class AudioFeatureExtractor:
                 y=y,
                 sr=self.sr,
                 n_mfcc=13,
-                n_fft=8192,
-                hop_length=2048,
-                win_length=8192,
+                n_fft=16384,
+                hop_length=4096,
+                win_length=16384,
                 window='hann',
                 n_mels=128,
                 fmin=20,
@@ -79,24 +79,7 @@ class AudioFeatureExtractor:
             # 平滑處理
             mfcc = scipy.signal.medfilt(mfcc, kernel_size=(1, 5))
             
-            # 計算統計特徵
-            mfcc_mean = np.mean(mfcc)
-            mfcc_std = np.std(mfcc)
-            mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
-            
-            # 評估特徵穩定性
-            mfcc_stability = mfcc_cv < 0.2
-            mfcc_range_valid = -100 < mfcc_mean < 0
-            mfcc_std_valid = mfcc_std < 30
-            
-            return {
-                'mfcc_mean': mfcc_mean,
-                'mfcc_std': mfcc_std,
-                'mfcc_cv': mfcc_cv,
-                'mfcc_stability': mfcc_stability,
-                'mfcc_range_valid': mfcc_range_valid,
-                'mfcc_std_valid': mfcc_std_valid
-            }
+            return mfcc
         except Exception as e:
             print(f"MFCC提取錯誤 {audio_path}: {str(e)}")
             return None
@@ -221,18 +204,16 @@ class AudioFeatureExtractor:
         features = {}
         
         # 提取各項特徵
-        mfcc_features = self.extract_mfcc(audio_path)
+        mfcc = self.extract_mfcc(audio_path)
+        if mfcc is not None:
+            features['mfcc'] = mfcc
         f0_features = self.extract_f0(audio_path)
-        energy_features = self.extract_energy(audio_path)
-        zcr_features = self.extract_zcr(audio_path)
-        
-        # 合併特徵
-        if mfcc_features:
-            features.update(mfcc_features)
         if f0_features:
             features.update(f0_features)
+        energy_features = self.extract_energy(audio_path)
         if energy_features:
             features.update(energy_features)
+        zcr_features = self.extract_zcr(audio_path)
         if zcr_features:
             features.update(zcr_features)
             
