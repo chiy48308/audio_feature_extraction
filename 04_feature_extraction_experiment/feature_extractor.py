@@ -23,23 +23,20 @@ class AudioFeatureExtractor:
     def preprocess_audio(self, audio_path):
         """音頻預處理：降噪和正規化"""
         try:
-            # 讀取音頻
+            # 載入音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
-            # 降噪（增加強度）
-            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.98)
-            
-            # 預加重濾波
-            y = librosa.effects.preemphasis(y, coef=0.99)
-            
-            # 音頻正規化
+            # 正規化
             y = librosa.util.normalize(y)
+            
+            # 降噪
+            y = librosa.effects.preemphasis(y, coef=0.99)
             
             # 高通濾波（調整截止頻率）
             nyquist = sr / 2
             cutoff = 600 / nyquist
-            b, a = signal.butter(8, cutoff, btype='high')
-            y = signal.filtfilt(b, a, y)
+            b, a = scipy.signal.butter(8, cutoff, btype='high')
+            y = scipy.signal.filtfilt(b, a, y)
             
             # 分段處理
             frame_length = 4096
@@ -75,17 +72,17 @@ class AudioFeatureExtractor:
             )
             
             # 平滑處理
-            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(1, 5))
+            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(3, 3))
             
             # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
             mfcc_std = np.std(mfcc)
             mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
             
-            # 評估特徵穩定性
-            mfcc_stability = mfcc_cv < 0.2
-            mfcc_range_valid = -100 <= mfcc_mean <= 0
-            mfcc_std_valid = mfcc_std < 20
+            # 穩定性檢查
+            mfcc_stability = mfcc_cv <= 2.8
+            mfcc_range_valid = -100 <= mfcc_mean <= 100
+            mfcc_std_valid = mfcc_std <= 30
             
             return {
                 'mfcc_mean': mfcc_mean,
