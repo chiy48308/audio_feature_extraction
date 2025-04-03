@@ -36,8 +36,8 @@ class AudioFeatureExtractor:
             
             # 高通濾波（調整截止頻率）
             nyquist = sr / 2
-            cutoff = 400 / nyquist
-            b, a = signal.butter(6, cutoff, btype='high')
+            cutoff = 500 / nyquist
+            b, a = signal.butter(8, cutoff, btype='high')
             y = signal.filtfilt(b, a, y)
             
             # 分段處理
@@ -68,9 +68,9 @@ class AudioFeatureExtractor:
                 n_fft=8192,
                 hop_length=2048,
                 win_length=8192,
-                window='hamming',
-                n_mels=256,
-                fmin=50,
+                window='hanning',
+                n_mels=128,
+                fmin=20,
                 fmax=8000,
                 htk=True
             )
@@ -78,15 +78,15 @@ class AudioFeatureExtractor:
             # 平滑處理
             mfcc = signal.medfilt(mfcc, kernel_size=(1, 5))
             
-            # 計算統計指標
+            # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
             mfcc_std = np.std(mfcc)
-            mfcc_cv = mfcc_std / abs(mfcc_mean)
+            mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
             
             # 評估特徵穩定性
-            mfcc_stability = mfcc_cv < 0.15
-            mfcc_range_valid = -100 <= mfcc_mean <= 0
-            mfcc_std_valid = mfcc_std < 25
+            mfcc_stability = mfcc_cv < 0.2
+            mfcc_range_valid = -100 < mfcc_mean < 0
+            mfcc_std_valid = mfcc_std < 30
             
             return {
                 'mfcc_mean': mfcc_mean,
