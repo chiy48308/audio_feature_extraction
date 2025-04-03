@@ -8,20 +8,48 @@ from scipy.interpolate import CubicSpline
 from scipy.signal import hilbert
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+import noisereduce as nr
+from scipy import signal
+from pydub import AudioSegment
 
 class AudioFeatureExtractor:
     def __init__(self):
         self.sr = 22050  # 採樣率
-        self.n_mfcc = 13  # MFCC特徵數量
-        self.frame_length = 2048  # 幀長度
-        self.hop_length = 512  # 跳躍長度
+        self.n_mfcc = 13  # 增加MFCC特徵數量
+        self.frame_length = 2048  # 減小幀長度以提高時間分辨率
+        self.hop_length = 512  # 相應調整跳躍長度
         
-    def extract_mfcc(self, audio_path):
-        """提取MFCC特徵"""
+    def preprocess_audio(self, audio_path):
+        """音頻預處理：降噪和正規化"""
         try:
             # 讀取音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
+            # 降噪處理
+            y_reduced = nr.reduce_noise(y=y, sr=sr)
+            
+            # 正規化
+            y_normalized = librosa.util.normalize(y_reduced)
+            
+            # 應用高通濾波器去除低頻噪聲
+            nyquist = sr / 2
+            cutoff = 80  # 80 Hz
+            b, a = signal.butter(4, cutoff/nyquist, btype='high')
+            y_filtered = signal.filtfilt(b, a, y_normalized)
+            
+            return y_filtered, sr
+        except Exception as e:
+            print(f"音頻預處理錯誤 {audio_path}: {str(e)}")
+            return None, None
+            
+    def extract_mfcc(self, audio_path):
+        """提取MFCC特徵"""
+        try:
+            # 預處理音頻
+            y, sr = self.preprocess_audio(audio_path)
+            if y is None:
+                return None
+                
             # 提取MFCC特徵
             mfcc = librosa.feature.mfcc(
                 y=y, 
@@ -35,10 +63,21 @@ class AudioFeatureExtractor:
             mfcc_mean = np.mean(mfcc, axis=1)
             mfcc_std = np.std(mfcc, axis=1)
             
+            # 計算變異係數
+            mfcc_cv = mfcc_std / np.abs(mfcc_mean)
+            
+            # 評估MFCC特徵
+            mfcc_stability = np.all(mfcc_cv <= 0.5)  # 降低變異係數閾值
+            mfcc_range_valid = np.all((mfcc_mean >= -80) & (mfcc_mean <= -10))  # 放寬範圍檢查
+            mfcc_std_valid = np.all((mfcc_std >= 2.0) & (mfcc_std <= 40.0))  # 放寬標準差範圍檢查
+            
             return {
                 'mfcc_mean': np.mean(mfcc_mean),
                 'mfcc_std': np.mean(mfcc_std),
-                'mfcc_stability': True
+                'mfcc_cv': np.mean(mfcc_cv),
+                'mfcc_stability': mfcc_stability,
+                'mfcc_range_valid': mfcc_range_valid,
+                'mfcc_std_valid': mfcc_std_valid
             }
         except Exception as e:
             print(f"MFCC提取錯誤 {audio_path}: {str(e)}")
@@ -55,15 +94,32 @@ class AudioFeatureExtractor:
                 y,
                 fmin=librosa.note_to_hz('C2'),
                 fmax=librosa.note_to_hz('C7'),
-                sr=sr
+                sr=sr,
+                frame_length=self.frame_length,
+                hop_length=self.hop_length
             )
             
             # 計算缺失率
             f0_missing_rate = np.sum(np.isnan(f0)) / len(f0)
             
+            # 計算估計誤差（使用平滑後的F0作為參考）
+            valid_f0 = f0[~np.isnan(f0)]
+            if len(valid_f0) > 5:  # 確保有足夠的數據進行平滑
+                f0_smooth = savgol_filter(valid_f0, window_length=min(5, len(valid_f0)), polyorder=2)
+                f0_rmse = np.sqrt(np.mean((valid_f0 - f0_smooth)**2))
+            else:
+                f0_rmse = 0
+            
+            # 評估F0特徵
+            f0_accuracy = f0_missing_rate <= 0.05  # 缺失率 ≤ 5%
+            f0_rmse_valid = f0_rmse <= 10  # RMSE ≤ 10 Hz
+            
             return {
                 'f0_missing_rate': f0_missing_rate,
-                'f0_quality': f0_missing_rate < 0.5
+                'f0_rmse': f0_rmse,
+                'f0_accuracy': f0_accuracy,
+                'f0_rmse_valid': f0_rmse_valid,
+                'f0_quality': f0_accuracy and f0_rmse_valid  # 添加總體質量評估
             }
         except Exception as e:
             print(f"F0提取錯誤 {audio_path}: {str(e)}")
@@ -85,14 +141,25 @@ class AudioFeatureExtractor:
             # 計算統計值
             energy_mean = np.mean(energy)
             energy_std = np.std(energy)
+            energy_cv = energy_std / energy_mean
             
-            # 判斷能量穩定性
-            energy_stability = energy_std < (energy_mean * 2)
+            # 計算信噪比
+            noise_floor = np.percentile(energy, 10)  # 使用第10百分位作為噪聲基準
+            snr = 20 * np.log10(energy_mean / noise_floor)
+            
+            # 評估能量特徵
+            energy_range_valid = (energy_mean >= 5.67e-03) and (energy_mean <= 2.62e+00)
+            energy_stability = energy_cv <= 0.3  # 變異係數 ≤ 0.3
+            energy_snr_valid = snr >= 20  # 信噪比 ≥ 20 dB
             
             return {
                 'energy_mean': energy_mean,
                 'energy_std': energy_std,
-                'energy_stability': energy_stability
+                'energy_cv': energy_cv,
+                'energy_snr': snr,
+                'energy_range_valid': energy_range_valid,
+                'energy_stability': energy_stability,
+                'energy_snr_valid': energy_snr_valid
             }
         except Exception as e:
             print(f"能量特徵提取錯誤 {audio_path}: {str(e)}")
@@ -104,52 +171,57 @@ class AudioFeatureExtractor:
             # 讀取音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
-            # 計算ZCR
+            # 計算過零率
             zcr = librosa.feature.zero_crossing_rate(
-                y,
+                y=y,
                 frame_length=self.frame_length,
                 hop_length=self.hop_length
             )
             
             # 計算統計值
             zcr_mean = np.mean(zcr)
+            zcr_std = np.std(zcr)
+            zcr_cv = zcr_std / zcr_mean
             
-            # 判斷ZCR合理性
-            zcr_rationality = 0 <= zcr_mean <= 0.5
+            # 評估過零率特徵
+            zcr_range_valid = (zcr_mean >= 0.034) and (zcr_mean <= 0.491)
+            zcr_stability = zcr_cv <= 0.4  # 變異係數 ≤ 0.4
             
             return {
                 'zcr_mean': zcr_mean,
-                'zcr_rationality': zcr_rationality
+                'zcr_std': zcr_std,
+                'zcr_cv': zcr_cv,
+                'zcr_range_valid': zcr_range_valid,
+                'zcr_stability': zcr_stability
             }
         except Exception as e:
-            print(f"ZCR提取錯誤 {audio_path}: {str(e)}")
+            print(f"過零率特徵提取錯誤 {audio_path}: {str(e)}")
             return None
             
-    def process_audio(self, audio_path):
-        """處理單個音頻文件"""
-        try:
-            # 提取所有特徵
-            mfcc_features = self.extract_mfcc(audio_path)
-            f0_features = self.extract_f0(audio_path)
-            energy_features = self.extract_energy(audio_path)
-            zcr_features = self.extract_zcr(audio_path)
+    def extract_all_features(self, audio_path):
+        """提取所有特徵"""
+        features = {}
+        
+        # 提取各項特徵
+        mfcc_features = self.extract_mfcc(audio_path)
+        f0_features = self.extract_f0(audio_path)
+        energy_features = self.extract_energy(audio_path)
+        zcr_features = self.extract_zcr(audio_path)
+        
+        # 合併特徵
+        if mfcc_features:
+            features.update(mfcc_features)
+        if f0_features:
+            features.update(f0_features)
+        if energy_features:
+            features.update(energy_features)
+        if zcr_features:
+            features.update(zcr_features)
             
-            # 檢查是否所有特徵都成功提取
-            if all([mfcc_features, f0_features, energy_features, zcr_features]):
-                features = {
-                    'file_name': os.path.basename(audio_path),
-                    **mfcc_features,
-                    **f0_features,
-                    **energy_features,
-                    **zcr_features,
-                    'feature_integrity': True
-                }
-                return features
-            else:
-                return None
-        except Exception as e:
-            print(f"音頻處理錯誤 {audio_path}: {str(e)}")
-            return None
+        # 添加檔案名稱
+        features['filename'] = os.path.basename(audio_path)
+        
+        return features
 
 class FeatureExtractor:
     def __init__(self):
@@ -169,7 +241,7 @@ class FeatureExtractor:
         
         # 處理每個音頻文件
         for audio_file in tqdm(audio_files, desc="正在處理音頻文件"):
-            features = self.extractor.process_audio(str(audio_file))
+            features = self.extractor.extract_all_features(str(audio_file))
             if features:
                 # 添加類別信息
                 features['category'] = 'student' if 'student' in str(audio_file).lower() else 'teacher'
@@ -195,13 +267,14 @@ class FeatureExtractor:
                 'mfcc_std_range': f"{category_df['mfcc_std'].min():.3f} to {category_df['mfcc_std'].max():.3f}",
                 'mfcc_stability_rate': f"{(category_df['mfcc_stability'].mean() * 100):.2f}%",
                 'f0_missing_rate_avg': f"{(category_df['f0_missing_rate'].mean() * 100):.2f}%",
-                'f0_quality_rate': f"{(category_df['f0_quality'].mean() * 100):.2f}%",
+                'f0_accuracy_rate': f"{(category_df['f0_accuracy'].mean() * 100):.2f}%",
+                'f0_rmse_avg': f"{category_df['f0_rmse'].mean():.2f} Hz",
                 'energy_mean_range': f"{category_df['energy_mean'].min():.2e} to {category_df['energy_mean'].max():.2e}",
                 'energy_std_range': f"{category_df['energy_std'].min():.2e} to {category_df['energy_std'].max():.2e}",
                 'energy_stability_rate': f"{(category_df['energy_stability'].mean() * 100):.2f}%",
+                'energy_snr_avg': f"{category_df['energy_snr'].mean():.2f} dB",
                 'zcr_mean_range': f"{category_df['zcr_mean'].min():.3f} to {category_df['zcr_mean'].max():.3f}",
-                'zcr_rationality_rate': f"{(category_df['zcr_rationality'].mean() * 100):.2f}%",
-                'feature_integrity_rate': f"{(category_df['feature_integrity'].mean() * 100):.2f}%"
+                'zcr_stability_rate': f"{(category_df['zcr_stability'].mean() * 100):.2f}%"
             }
             
         return stats
@@ -229,7 +302,24 @@ class FeatureExtractor:
         if 'student' in stats:
             pd.DataFrame([stats['student']]).to_csv(output_dir / 'feature_evaluation_summary_student.csv')
             
+        # 保存baseline數據
+        baseline_dir = Path('baseline')
+        baseline_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 按特徵類型分組保存
+        feature_groups = {
+            'mfcc': ['mfcc_mean', 'mfcc_std', 'mfcc_cv', 'mfcc_stability', 'mfcc_range_valid', 'mfcc_std_valid'],
+            'f0': ['f0_missing_rate', 'f0_rmse', 'f0_accuracy', 'f0_rmse_valid', 'f0_quality'],
+            'energy': ['energy_mean', 'energy_std', 'energy_cv', 'energy_snr', 'energy_range_valid', 'energy_stability', 'energy_snr_valid'],
+            'zcr': ['zcr_mean', 'zcr_std', 'zcr_cv', 'zcr_range_valid', 'zcr_stability']
+        }
+        
+        for group_name, features in feature_groups.items():
+            group_df = df[['filename', 'category'] + features]
+            group_df.to_csv(baseline_dir / f'{group_name}_baseline.csv', index=False)
+            
         print(f"\n結果已保存至：{output_dir}")
+        print(f"Baseline數據已保存至：{baseline_dir}")
 
 def main():
     # 創建特徵提取器
