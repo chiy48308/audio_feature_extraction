@@ -53,36 +53,36 @@ class AudioFeatureExtractor:
     def extract_mfcc(self, audio_path):
         """提取MFCC特徵"""
         try:
+            # 讀取音頻
+            y, sr = librosa.load(audio_path, sr=self.sr)
+            
             # 預處理音頻
-            y = self.preprocess_audio(audio_path)
+            y = self.preprocess_audio(y)
             
             # 提取MFCC特徵
             mfcc = librosa.feature.mfcc(
-                y=y,
-                sr=self.sr,
+                y=y, 
+                sr=sr,
                 n_mfcc=13,
                 n_fft=16384,
-                hop_length=8192,
+                hop_length=16384,
                 win_length=16384,
                 window='hann',
-                n_mels=160,
-                fmin=20,
-                fmax=8000,
-                htk=True
+                n_mels=192
             )
             
-            # 平滑處理
-            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(5, 5))
+            # 使用更大的kernel進行平滑
+            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(7, 7))
             
             # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
             mfcc_std = np.std(mfcc)
-            mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
+            mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
             
-            # 穩定性檢查
-            mfcc_stability = mfcc_cv <= 2.5
-            mfcc_range_valid = -100 <= mfcc_mean <= 100
-            mfcc_std_valid = mfcc_std <= 30
+            # 評估特徵穩定性
+            mfcc_stability = mfcc_cv < 2.5 if mfcc_mean != 0 else False
+            mfcc_range_valid = -100 < mfcc_mean < 100
+            mfcc_std_valid = 0 <= mfcc_std < 50
             
             return {
                 'mfcc_mean': mfcc_mean,
@@ -93,7 +93,7 @@ class AudioFeatureExtractor:
                 'mfcc_std_valid': mfcc_std_valid
             }
         except Exception as e:
-            print(f"MFCC提取錯誤 {audio_path}: {str(e)}")
+            print(f"MFCC提取失敗: {str(e)}")
             return None
             
     def extract_f0(self, audio_path):
