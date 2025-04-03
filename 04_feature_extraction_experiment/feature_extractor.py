@@ -25,56 +25,54 @@ class AudioFeatureExtractor:
             # 讀取音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
-            # 降噪處理
-            y_reduced = nr.reduce_noise(y=y, sr=sr)
+            # 降噪
+            y = nr.reduce_noise(y=y, sr=sr)
             
             # 正規化
-            y_normalized = librosa.util.normalize(y_reduced)
+            y = librosa.util.normalize(y)
             
-            # 應用高通濾波器去除低頻噪聲
-            nyquist = sr / 2
-            cutoff = 80  # 80 Hz
-            b, a = signal.butter(4, cutoff/nyquist, btype='high')
-            y_filtered = signal.filtfilt(b, a, y_normalized)
+            # 高通濾波去除低頻噪音
+            b, a = signal.butter(4, 100/(sr/2), btype='high')
+            y = signal.filtfilt(b, a, y)
             
-            return y_filtered, sr
+            return y
         except Exception as e:
             print(f"音頻預處理錯誤 {audio_path}: {str(e)}")
-            return None, None
+            return None
             
     def extract_mfcc(self, audio_path):
         """提取MFCC特徵"""
         try:
             # 預處理音頻
-            y, sr = self.preprocess_audio(audio_path)
+            y = self.preprocess_audio(audio_path)
             if y is None:
                 return None
                 
             # 提取MFCC特徵
             mfcc = librosa.feature.mfcc(
-                y=y, 
-                sr=sr,
-                n_mfcc=self.n_mfcc,
-                n_fft=self.frame_length,
-                hop_length=self.hop_length
+                y=y,
+                sr=self.sr,
+                n_mfcc=13,  # 減少MFCC係數數量
+                n_fft=2048,  # 增加FFT窗口大小
+                hop_length=512,  # 調整hop length
+                win_length=2048,  # 設置窗口長度
+                window='hann'  # 使用漢寧窗
             )
             
-            # 計算統計值
-            mfcc_mean = np.mean(mfcc, axis=1)
-            mfcc_std = np.std(mfcc, axis=1)
+            # 計算統計量
+            mfcc_mean = np.mean(mfcc)
+            mfcc_std = np.std(mfcc)
+            mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
             
-            # 計算變異係數
-            mfcc_cv = mfcc_std / np.abs(mfcc_mean)
-            
-            # 評估MFCC特徵
-            mfcc_stability = np.all(mfcc_cv <= 0.5)  # 降低變異係數閾值
-            mfcc_range_valid = np.all((mfcc_mean >= -80) & (mfcc_mean <= -10))  # 放寬範圍檢查
-            mfcc_std_valid = np.all((mfcc_std >= 2.0) & (mfcc_std <= 40.0))  # 放寬標準差範圍檢查
+            # 評估穩定性
+            mfcc_stability = mfcc_cv < 0.5  # 降低變異係數閾值
+            mfcc_range_valid = -50 < mfcc_mean < -20  # 調整有效範圍
+            mfcc_std_valid = mfcc_std < 30  # 降低標準差閾值
             
             return {
-                'mfcc_mean': np.mean(mfcc_mean),
-                'mfcc_std': np.mean(mfcc_std),
-                'mfcc_cv': np.mean(mfcc_cv),
+                'mfcc_mean': mfcc_mean,
+                'mfcc_std': mfcc_std,
+                'mfcc_cv': mfcc_cv,
                 'mfcc_stability': mfcc_stability,
                 'mfcc_range_valid': mfcc_range_valid,
                 'mfcc_std_valid': mfcc_std_valid
