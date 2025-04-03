@@ -1,3 +1,0 @@
-,file_count,mfcc_mean_range,mfcc_std_range,mfcc_stability_rate,f0_missing_rate_avg,f0_quality_rate,energy_mean_range,energy_std_range,energy_stability_rate,zcr_mean_range,zcr_rationality_rate,feature_integrity_rate
-teacher,111,-67.295 to -22.825,21.246 to 37.803,100.00%,53.16%,50.45%,1.20e-03 to 6.10e-02,3.25e-03 to 5.10e-02,97.30%,0.025 to 0.405,100.00%,100.00%
-student,111,-72.183 to -14.996,3.607 to 32.107,100.00%,82.82%,21.62%,7.04e-06 to 2.05e-01,4.04e-07 to 1.44e-01,100.00%,0.050 to 0.650,27.03%,100.00%
