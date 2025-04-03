@@ -62,17 +62,17 @@ class AudioFeatureExtractor:
                 sr=self.sr,
                 n_mfcc=13,
                 n_fft=16384,
-                hop_length=4096,
+                hop_length=8192,
                 win_length=16384,
                 window='hann',
-                n_mels=128,
+                n_mels=160,
                 fmin=20,
                 fmax=8000,
                 htk=True
             )
             
             # 平滑處理
-            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(3, 3))
+            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(5, 5))
             
             # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
@@ -80,7 +80,7 @@ class AudioFeatureExtractor:
             mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
             
             # 穩定性檢查
-            mfcc_stability = mfcc_cv <= 2.8
+            mfcc_stability = mfcc_cv <= 2.5
             mfcc_range_valid = -100 <= mfcc_mean <= 100
             mfcc_std_valid = mfcc_std <= 30
             
