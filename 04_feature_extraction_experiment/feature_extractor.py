@@ -25,14 +25,17 @@ class AudioFeatureExtractor:
             # 讀取音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
-            # 降噪
-            y = nr.reduce_noise(y=y, sr=sr)
+            # 預加重濾波
+            y = librosa.effects.preemphasis(y)
+            
+            # 降噪（增加強度）
+            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.8)
             
             # 正規化
             y = librosa.util.normalize(y)
             
-            # 高通濾波去除低頻噪音
-            b, a = signal.butter(4, 100/(sr/2), btype='high')
+            # 高通濾波去除低頻噪音（調整截止頻率）
+            b, a = signal.butter(4, 200/(sr/2), btype='high')
             y = signal.filtfilt(b, a, y)
             
             return y
@@ -52,11 +55,12 @@ class AudioFeatureExtractor:
             mfcc = librosa.feature.mfcc(
                 y=y,
                 sr=self.sr,
-                n_mfcc=13,  # 減少MFCC係數數量
-                n_fft=2048,  # 增加FFT窗口大小
-                hop_length=512,  # 調整hop length
-                win_length=2048,  # 設置窗口長度
-                window='hann'  # 使用漢寧窗
+                n_mfcc=13,  # 保持13個MFCC係數
+                n_fft=4096,  # 增加FFT窗口大小
+                hop_length=1024,  # 增加hop length
+                win_length=4096,  # 增加窗口長度
+                window='hann',  # 使用漢寧窗
+                lifter=2  # 添加liftering
             )
             
             # 計算統計量
@@ -65,9 +69,9 @@ class AudioFeatureExtractor:
             mfcc_cv = mfcc_std / abs(mfcc_mean) if mfcc_mean != 0 else float('inf')
             
             # 評估穩定性
-            mfcc_stability = mfcc_cv < 0.5  # 降低變異係數閾值
-            mfcc_range_valid = -50 < mfcc_mean < -20  # 調整有效範圍
-            mfcc_std_valid = mfcc_std < 30  # 降低標準差閾值
+            mfcc_stability = mfcc_cv < 0.3  # 降低變異係數閾值
+            mfcc_range_valid = -50 < mfcc_mean < -20  # 保持有效範圍
+            mfcc_std_valid = mfcc_std < 50  # 調整標準差閾值
             
             return {
                 'mfcc_mean': mfcc_mean,
