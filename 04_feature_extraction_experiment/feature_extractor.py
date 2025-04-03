@@ -221,7 +221,7 @@ class AudioFeatureExtractor:
         # 提取各項特徵
         mfcc = self.extract_mfcc(audio_path)
         if mfcc is not None:
-            features['mfcc'] = mfcc
+            features.update(mfcc)  # 直接更新MFCC特徵，而不是嵌套存儲
         f0_features = self.extract_f0(audio_path)
         if f0_features:
             features.update(f0_features)
