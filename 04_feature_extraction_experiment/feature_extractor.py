@@ -11,6 +11,7 @@ from scipy.signal import savgol_filter
 import noisereduce as nr
 from scipy import signal
 from pydub import AudioSegment
+import scipy.signal
 
 class AudioFeatureExtractor:
     def __init__(self):
@@ -68,7 +69,7 @@ class AudioFeatureExtractor:
                 n_fft=8192,
                 hop_length=2048,
                 win_length=8192,
-                window='hanning',
+                window='hann',
                 n_mels=128,
                 fmin=20,
                 fmax=8000,
@@ -76,7 +77,7 @@ class AudioFeatureExtractor:
             )
             
             # 平滑處理
-            mfcc = signal.medfilt(mfcc, kernel_size=(1, 5))
+            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(1, 5))
             
             # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
@@ -273,25 +274,24 @@ class FeatureExtractor:
             
         df = pd.DataFrame(features_list)
         
+        # 確保所有必要的列都存在
+        required_columns = ['filename', 'category', 'mfcc_mean', 'mfcc_std', 'mfcc_cv', 
+                           'mfcc_stability', 'mfcc_range_valid', 'mfcc_std_valid']
+        for col in required_columns:
+            if col not in df.columns:
+                df[col] = None
+        
         # 按類別分組計算統計信息
         stats = {}
         for category in df['category'].unique():
             category_df = df[df['category'] == category]
-            
             stats[category] = {
-                'file_count': len(category_df),
                 'mfcc_mean_range': f"{category_df['mfcc_mean'].min():.3f} to {category_df['mfcc_mean'].max():.3f}",
                 'mfcc_std_range': f"{category_df['mfcc_std'].min():.3f} to {category_df['mfcc_std'].max():.3f}",
-                'mfcc_stability_rate': f"{(category_df['mfcc_stability'].mean() * 100):.2f}%",
-                'f0_missing_rate_avg': f"{(category_df['f0_missing_rate'].mean() * 100):.2f}%",
-                'f0_accuracy_rate': f"{(category_df['f0_accuracy'].mean() * 100):.2f}%",
-                'f0_rmse_avg': f"{category_df['f0_rmse'].mean():.2f} Hz",
-                'energy_mean_range': f"{category_df['energy_mean'].min():.2e} to {category_df['energy_mean'].max():.2e}",
-                'energy_std_range': f"{category_df['energy_std'].min():.2e} to {category_df['energy_std'].max():.2e}",
-                'energy_stability_rate': f"{(category_df['energy_stability'].mean() * 100):.2f}%",
-                'energy_snr_avg': f"{category_df['energy_snr'].mean():.2f} dB",
-                'zcr_mean_range': f"{category_df['zcr_mean'].min():.3f} to {category_df['zcr_mean'].max():.3f}",
-                'zcr_stability_rate': f"{(category_df['zcr_stability'].mean() * 100):.2f}%"
+                'mfcc_cv_range': f"{category_df['mfcc_cv'].min():.3f} to {category_df['mfcc_cv'].max():.3f}",
+                'stability_rate': f"{(category_df['mfcc_stability'].sum() / len(category_df) * 100):.1f}%",
+                'range_valid_rate': f"{(category_df['mfcc_range_valid'].sum() / len(category_df) * 100):.1f}%",
+                'std_valid_rate': f"{(category_df['mfcc_std_valid'].sum() / len(category_df) * 100):.1f}%"
             }
             
         return stats
