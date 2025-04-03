@@ -25,20 +25,27 @@ class AudioFeatureExtractor:
             # 讀取音頻
             y, sr = librosa.load(audio_path, sr=self.sr)
             
-            # 降噪
-            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.9)
+            # 降噪（增加強度）
+            y = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.95)
             
             # 預加重濾波
-            y = librosa.effects.preemphasis(y, coef=0.97)
+            y = librosa.effects.preemphasis(y, coef=0.98)
             
             # 音頻正規化
             y = librosa.util.normalize(y)
             
-            # 高通濾波
+            # 高通濾波（調整截止頻率）
             nyquist = sr / 2
-            cutoff = 300 / nyquist
-            b, a = signal.butter(4, cutoff, btype='high')
+            cutoff = 400 / nyquist
+            b, a = signal.butter(6, cutoff, btype='high')
             y = signal.filtfilt(b, a, y)
+            
+            # 分段處理
+            frame_length = 2048
+            hop_length = 512
+            frames = librosa.util.frame(y, frame_length=frame_length, hop_length=hop_length)
+            frames = librosa.util.normalize(frames, axis=0)
+            y = librosa.util.fix_length(frames.mean(axis=1), size=len(y))
             
             return y
         except Exception as e:
@@ -61,11 +68,15 @@ class AudioFeatureExtractor:
                 n_fft=8192,
                 hop_length=2048,
                 win_length=8192,
-                window='hann',
-                n_mels=128,
-                fmin=20,
-                fmax=8000
+                window='hamming',
+                n_mels=256,
+                fmin=50,
+                fmax=8000,
+                htk=True
             )
+            
+            # 平滑處理
+            mfcc = signal.medfilt(mfcc, kernel_size=(1, 5))
             
             # 計算統計指標
             mfcc_mean = np.mean(mfcc)
@@ -73,9 +84,9 @@ class AudioFeatureExtractor:
             mfcc_cv = mfcc_std / abs(mfcc_mean)
             
             # 評估特徵穩定性
-            mfcc_stability = mfcc_cv < 0.2
+            mfcc_stability = mfcc_cv < 0.15
             mfcc_range_valid = -100 <= mfcc_mean <= 0
-            mfcc_std_valid = mfcc_std < 30
+            mfcc_std_valid = mfcc_std < 25
             
             return {
                 'mfcc_mean': mfcc_mean,
