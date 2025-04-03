@@ -4,6 +4,8 @@ import csv
 import numpy as np
 import librosa
 from typing import Dict, List, Any, Optional
+from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
 
 def get_audio_files(directory: str) -> List[str]:
     """獲取目錄中的所有音頻文件"""
@@ -21,65 +23,88 @@ def get_audio_files(directory: str) -> List[str]:
 def extract_features(audio_file: str) -> Optional[Dict[str, Any]]:
     """從音頻文件中提取特徵"""
     try:
-        # 讀取音頻文件
-        y, sr = librosa.load(audio_file, sr=None)
+        # 讀取音頻文件，重採樣到 16kHz 以加快處理
+        y, sr = librosa.load(audio_file, sr=16000, duration=10.0)  # 限制處理時長為 10 秒
         
-        # 提取 MFCC 特徵
-        mfcc = librosa.feature.mfcc(y=y, sr=sr)
-        mfcc_mean = float(np.mean(mfcc))
-        mfcc_std = float(np.std(mfcc))
-        mfcc_stability = True if abs(mfcc_std) < 20 else False  # 判斷 MFCC 穩定性
+        # 簡化的預處理
+        y = librosa.util.normalize(y)
         
-        # 提取基頻特徵
-        f0, voiced_flag, _ = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), 
-                                        fmax=librosa.note_to_hz('C7'))
+        # 提取 MFCC 特徵，使用更高效的參數
+        mfcc = librosa.feature.mfcc(
+            y=y, 
+            sr=sr,
+            n_mfcc=13,
+            n_fft=400,
+            hop_length=160,
+            window='hamming'
+        )
+        
+        # 只計算一階 delta 特徵
+        mfcc_delta = librosa.feature.delta(mfcc)
+        mfcc_combined = np.vstack([mfcc, mfcc_delta])
+        
+        mfcc_mean = float(np.mean(mfcc_combined))
+        mfcc_std = float(np.std(mfcc_combined))
+        mfcc_stability = abs(mfcc_std) < 30
+        
+        # 使用更高效的基頻提取參數
+        f0, voiced_flag, _ = librosa.pyin(
+            y, 
+            fmin=librosa.note_to_hz('C2'),
+            fmax=librosa.note_to_hz('C7'),
+            frame_length=400,
+            hop_length=160
+        )
         f0_missing_rate = float(np.sum(np.isnan(f0)) / len(f0))
-        f0_quality = True if f0_missing_rate < 0.5 else False  # 判斷基頻質量
+        f0_quality = f0_missing_rate < 0.5
         
-        # 提取能量特徵
+        # 計算能量特徵
         energy = np.sum(y**2)
         energy_mean = float(np.mean(energy))
         energy_std = float(np.std(y**2))
-        energy_stability = True if energy_std < energy_mean * 0.5 else False  # 判斷能量穩定性
+        energy_stability = energy_std < energy_mean * 0.5
         
-        # 提取過零率特徵
-        zcr = librosa.feature.zero_crossing_rate(y)
+        # 計算過零率
+        zcr = librosa.feature.zero_crossing_rate(
+            y,
+            frame_length=400,
+            hop_length=160
+        )
         zcr_mean = float(np.mean(zcr))
-        zcr_rationality = True if 0.05 <= zcr_mean <= 0.5 else False  # 判斷過零率合理性
+        zcr_rationality = 0.05 <= zcr_mean <= 0.5
         
-        # 特徵完整性檢查
-        feature_integrity = True if (
-            not np.isnan(mfcc_mean) and 
-            not np.isnan(mfcc_std) and 
-            not np.isnan(energy_mean) and 
-            not np.isnan(energy_std) and 
-            not np.isnan(zcr_mean)
-        ) else False
+        feature_integrity = not (
+            np.isnan(mfcc_mean) or 
+            np.isnan(mfcc_std) or 
+            np.isnan(energy_mean) or 
+            np.isnan(energy_std) or 
+            np.isnan(zcr_mean)
+        )
         
-        # 確保所有值都是 Python 原生類型
-        features = {
-            'file': str(os.path.basename(audio_file)),
+        return {
+            'file': os.path.basename(audio_file),
             'mfcc_mean': float(mfcc_mean),
             'mfcc_std': float(mfcc_std),
-            'mfcc_stability': True if mfcc_stability else False,
+            'mfcc_stability': bool(mfcc_stability),
             'f0_missing_rate': float(f0_missing_rate),
-            'f0_quality': True if f0_quality else False,
+            'f0_quality': bool(f0_quality),
             'energy_mean': float(energy_mean),
             'energy_std': float(energy_std),
-            'energy_stability': True if energy_stability else False,
+            'energy_stability': bool(energy_stability),
             'zcr_mean': float(zcr_mean),
-            'zcr_rationality': True if zcr_rationality else False,
-            'feature_integrity': True if feature_integrity else False
+            'zcr_rationality': bool(zcr_rationality),
+            'feature_integrity': bool(feature_integrity)
         }
-        
-        # 將所有布爾值轉換為 Python 原生類型
-        for key in features:
-            if isinstance(features[key], np.bool_):
-                features[key] = bool(features[key])
-        
-        return features
     except Exception as e:
         print(f"提取特徵時出錯 {audio_file}: {str(e)}")
+        return None
+
+def process_audio_file(audio_file: str) -> Optional[Dict[str, Any]]:
+    """處理單個音頻文件的包裝函數"""
+    try:
+        return extract_features(audio_file)
+    except Exception as e:
+        print(f"處理文件 {audio_file} 時出錯: {str(e)}")
         return None
 
 def calculate_summary_statistics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -137,27 +162,19 @@ def main():
         print("未找到音頻文件")
         return
     
-    # 提取特徵
-    results = []
-    for audio_file in audio_files:
-        try:
-            features = extract_features(audio_file)
-            if features:
-                # 確保所有數值都是 Python 原生類型
-                processed_features = {}
-                for key, value in features.items():
-                    if isinstance(value, np.bool_):
-                        processed_features[key] = bool(value)
-                    elif isinstance(value, np.floating):
-                        processed_features[key] = float(value)
-                    elif isinstance(value, np.integer):
-                        processed_features[key] = int(value)
-                    else:
-                        processed_features[key] = value
-                results.append(processed_features)
-        except Exception as e:
-            print(f"處理文件 {audio_file} 時出錯: {str(e)}")
-            continue
+    print(f"開始處理 {len(audio_files)} 個音頻文件...")
+    
+    # 使用多進程處理
+    num_processes = max(1, cpu_count() - 1)  # 保留一個核心給系統
+    with Pool(num_processes) as pool:
+        results = list(tqdm(
+            pool.imap(process_audio_file, audio_files),
+            total=len(audio_files),
+            desc="提取特徵"
+        ))
+    
+    # 過濾掉 None 結果
+    results = [r for r in results if r is not None]
     
     if not results:
         print("沒有成功提取任何特徵")
