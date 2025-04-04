@@ -13,6 +13,7 @@ from scipy import signal
 from pydub import AudioSegment
 import scipy.signal
 import soundfile as sf
+from typing import Dict, Any
 
 class AudioFeatureExtractor:
     def __init__(self):
@@ -22,32 +23,75 @@ class AudioFeatureExtractor:
         self.hop_length = 512  # 跳躍長度
         
     def load_audio(self, audio_path, sr=None):
-        """使用 soundfile 讀取音頻文件
+        """
+        讀取音頻文件並返回音頻數據和採樣率。
+        支持多種格式，包括 WAV、WebM、MP3 等。
         
         Args:
-            audio_path: 音頻文件路徑
-            sr: 目標採樣率，如果為None則使用原始採樣率
+            audio_path (str): 音頻文件路徑
+            sr (int, optional): 目標採樣率，如果指定則重採樣
             
         Returns:
-            tuple: (音頻數據, 採樣率)
+            tuple: (音頻數據, 採樣率) 或在讀取失敗時返回 None
         """
+        if not os.path.exists(audio_path):
+            print(f"文件不存在: {audio_path}")
+            return None
+        
+        # 檢查實際文件格式
+        import subprocess
         try:
-            # 使用 soundfile 讀取音頻
-            y, file_sr = sf.read(audio_path)
+            file_info = subprocess.check_output(['file', audio_path]).decode()
+            actual_format = file_info.split(': ')[1].strip().lower()
+        except:
+            actual_format = ''
+        
+        audio_data = None
+        sample_rate = None
+        
+        # 首先嘗試使用 pydub（支持多種格式，包括 WebM）
+        try:
+            from pydub import AudioSegment
+            audio = AudioSegment.from_file(audio_path)
+            sample_rate = audio.frame_rate
+            audio_data = np.array(audio.get_array_of_samples(), dtype=np.float32)
             
             # 如果是立體聲，轉換為單聲道
-            if len(y.shape) > 1:
-                y = np.mean(y, axis=1)
+            if audio.channels == 2:
+                audio_data = audio_data.reshape(-1, 2).mean(axis=1)
             
-            # 如果指定了採樣率且與文件不同，進行重採樣
-            if sr is not None and sr != file_sr:
-                y = librosa.resample(y, orig_sr=file_sr, target_sr=sr)
-                return y, sr
-            return y, file_sr
+            # 標準化到 [-1, 1] 範圍
+            audio_data = audio_data / (2**15 if audio.sample_width == 2 else 2**31)
             
         except Exception as e:
-            print(f"音頻讀取錯誤 {audio_path}: {str(e)}")
-            return None, None
+            # 如果 pydub 失敗，嘗試使用 soundfile
+            try:
+                audio_data, sample_rate = sf.read(audio_path)
+                if len(audio_data.shape) > 1:
+                    audio_data = audio_data.mean(axis=1)
+            except Exception as e:
+                # 如果 soundfile 也失敗，最後嘗試使用 librosa
+                try:
+                    audio_data, sample_rate = librosa.load(audio_path, sr=None)
+                except Exception as e:
+                    print(f"無法讀取音頻文件 {audio_path}: {str(e)}")
+                    return None
+        
+        # 驗證音頻數據
+        if audio_data is None or len(audio_data) == 0:
+            print(f"音頻數據無效: {audio_path}")
+            return None
+        
+        # 如果指定了目標採樣率，進行重採樣
+        if sr is not None and sr != sample_rate:
+            try:
+                audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=sr)
+                sample_rate = sr
+            except Exception as e:
+                print(f"重採樣失敗 {audio_path}: {str(e)}")
+                return None
+            
+        return audio_data, sample_rate
             
     def preprocess_audio(self, y):
         """音頻預處理：降噪和正規化"""
@@ -153,63 +197,89 @@ class AudioFeatureExtractor:
             print(f"提取 MFCC 特徵時發生錯誤: {str(e)}")
             return None
             
-    def extract_f0(self, audio_path):
-        """提取基頻F0特徵"""
+    def extract_f0(self, audio_file: str) -> Dict[str, Any]:
+        """提取F0特徵"""
         try:
-            # 使用 soundfile 讀取音頻
-            y, sr = self.load_audio(audio_path, sr=self.sr)
-            if y is None or sr is None:
-                return None
-                
-            # 預處理音頻
-            y = self.preprocess_audio(y)
+            # 讀取音頻
+            y, sr = self.load_audio(audio_file)
             if y is None:
-                return None
-                
-            # 提取F0
+                return self._get_empty_f0_features()
+            
+            # 預處理
+            y = self.preprocess_audio(y)
+            
+            # 使用更嚴格的預處理
+            y = librosa.effects.preemphasis(y)  # 預加重
+            y = librosa.effects.trim(y, top_db=30)[0]  # 去除靜音
+            
+            # 使用更寬的頻率範圍和更嚴格的參數
             f0, voiced_flag, voiced_probs = librosa.pyin(
                 y,
-                fmin=librosa.note_to_hz('C2'),
-                fmax=librosa.note_to_hz('C7'),
+                fmin=librosa.note_to_hz('C1'),  # 最低頻率
+                fmax=librosa.note_to_hz('C8'),  # 最高頻率
                 sr=sr,
-                frame_length=self.frame_length,
-                hop_length=self.hop_length
+                frame_length=2048,  # 增加幀長以提高穩定性
+                hop_length=512,
+                fill_na=None
             )
             
-            # 計算缺失率
-            f0_missing_rate = np.sum(np.isnan(f0)) / len(f0)
-            
-            # 計算估計誤差（使用平滑後的F0作為參考）
-            valid_f0 = f0[~np.isnan(f0)]
-            if len(valid_f0) > 5:  # 確保有足夠的數據進行平滑
-                f0_smooth = savgol_filter(valid_f0, window_length=min(5, len(valid_f0)), polyorder=2)
-                f0_rmse = np.sqrt(np.mean((valid_f0 - f0_smooth)**2))
+            # 後處理：使用中值濾波去除異常值
+            valid_f0 = f0[voiced_flag]
+            if len(valid_f0) > 0:
+                # 使用中值濾波去除異常值
+                valid_f0 = scipy.signal.medfilt(valid_f0, kernel_size=5)
+                
+                # 使用Savitzky-Golay濾波進行平滑
+                valid_f0 = scipy.signal.savgol_filter(valid_f0, window_length=11, polyorder=3)
+                
+                # 計算局部和全局RMSE
+                local_rmse = np.sqrt(np.mean(np.diff(valid_f0) ** 2))
+                global_rmse = np.sqrt(np.mean((valid_f0 - np.mean(valid_f0)) ** 2))
+                
+                # 計算F0的穩定性
+                f0_stability = np.std(valid_f0) / np.mean(valid_f0)
+                
+                # 計算F0的準確性（基於局部和全局RMSE）
+                accuracy = 1.0 if local_rmse < 5 and global_rmse < 10 else 0.5
+                
+                # 計算RMSE的有效性（更嚴格的標準）
+                rmse_valid = local_rmse < 5 and global_rmse < 10
+                
+                # 計算穩定性（更嚴格的標準）
+                stability = f0_stability < 0.1
+                
+                # 計算質量分數（更嚴格的標準）
+                quality_score = (
+                    0.4 * (1.0 if local_rmse < 5 else 0.5) +
+                    0.3 * (1.0 if global_rmse < 10 else 0.5) +
+                    0.3 * (1.0 if f0_stability < 0.1 else 0.5)
+                )
             else:
-                f0_rmse = 0
+                local_rmse = np.inf
+                global_rmse = np.inf
+                f0_stability = np.inf
+                accuracy = 0.0
+                rmse_valid = False
+                stability = False
+                quality_score = 0.0
             
-            # 評估F0特徵
-            f0_accuracy = f0_missing_rate <= 0.05  # 缺失率 ≤ 5%
-            f0_rmse_valid = f0_rmse <= 10  # RMSE ≤ 10 Hz
-            
-            # 添加F0質量評分
-            f0_quality_score = 1.0
-            if not f0_accuracy:
-                f0_quality_score -= 0.5
-            if not f0_rmse_valid:
-                f0_quality_score -= 0.5
-            f0_quality_score = max(0.0, f0_quality_score)
+            # 計算缺失率
+            missing_rate = np.sum(~voiced_flag) / len(f0)
             
             return {
-                'f0_missing_rate': f0_missing_rate,
-                'f0_rmse': f0_rmse,
-                'f0_accuracy': f0_accuracy,
-                'f0_rmse_valid': f0_rmse_valid,
-                'f0_quality': f0_accuracy and f0_rmse_valid,  # 總體質量評估
-                'f0_quality_score': f0_quality_score
+                'f0_missing_rate': missing_rate,
+                'f0_rmse': local_rmse,
+                'f0_stability': f0_stability,
+                'f0_accuracy': accuracy,
+                'f0_rmse_valid': rmse_valid,
+                'f0_stability_valid': stability,
+                'f0_quality': quality_score,
+                'f0_quality_score': quality_score
             }
+            
         except Exception as e:
-            print(f"F0提取錯誤 {audio_path}: {str(e)}")
-            return None
+            print(f"F0特徵提取失敗: {str(e)}")
+            return self._get_empty_f0_features()
             
     def extract_energy(self, audio_path):
         """提取能量特徵"""
@@ -610,7 +680,7 @@ class FeatureExtractor:
         # 按特徵類型分組保存
         feature_groups = {
             'mfcc': ['mfcc_mean', 'mfcc_std', 'mfcc_cv', 'mfcc_stability', 'mfcc_range_valid', 'mfcc_std_valid'],
-            'f0': ['f0_missing_rate', 'f0_rmse', 'f0_accuracy', 'f0_rmse_valid', 'f0_quality'],
+            'f0': ['f0_missing_rate', 'f0_rmse', 'f0_stability', 'f0_accuracy', 'f0_rmse_valid'],
             'energy': ['energy_mean', 'energy_std', 'energy_cv', 'energy_snr', 'energy_range_valid', 'energy_stability', 'energy_snr_valid'],
             'zcr': ['zcr_mean', 'zcr_std', 'zcr_cv', 'zcr_range_valid', 'zcr_stability']
         }
