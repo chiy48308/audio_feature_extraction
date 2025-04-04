@@ -27,25 +27,77 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FeatureExtractor:
-    """特徵提取器 - 最新版本"""
+    """音頻特徵提取器"""
     
-    def __init__(self, config_path='config/experiment_config.yaml'):
-        """初始化特徵提取器"""
-        self.config = self._load_config(config_path)
-        self.sample_rate = self.config['audio']['sample_rate']
-        self.vad = webrtcvad.Vad(self.config['vad']['aggressiveness'])
-        self.frame_duration = self.config['vad']['frame_duration']
-        self.min_speech_duration = self.config['vad']['min_speech_duration']
-        self.max_speech_duration = self.config['vad']['max_speech_duration']
-        self.min_silence_duration = self.config['vad']['min_silence_duration']
-        self.reference_level = self.config['volume']['reference_level']
-        self.version = "2.0.0"  # 添加版本標記
+    def __init__(self):
+        """初始化"""
+        # 基本參數
+        self.sample_rate = 16000
+        self.frame_duration = 0.025  # 25ms
+        self.hop_duration = 0.010    # 10ms
         
-    def _load_config(self, config_path):
-        """載入配置文件"""
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-            
+        # 計算幀長度和跳躍長度
+        self.n_fft = int(self.frame_duration * self.sample_rate)
+        self.hop_length = int(self.hop_duration * self.sample_rate)
+        
+        # VAD參數
+        self.vad_frame_duration = 0.030  # 30ms
+        self.vad_aggressiveness = 3
+        self.vad = webrtcvad.Vad(self.vad_aggressiveness)
+        
+        # MFCC參數
+        self.n_mfcc = 13
+        self.n_mels = 40
+        
+        # F0參數
+        self.f0_min = 50
+        self.f0_max = 400
+
+    def _save_features_to_csv(self, features, timestamp, base_name):
+        """將特徵保存為CSV格式"""
+        # 創建時間索引
+        n_frames = features['mfcc'].shape[1]
+        time_index = np.arange(n_frames) * self.hop_duration
+        
+        # 創建DataFrame
+        df = pd.DataFrame(index=time_index)
+        
+        # 添加MFCC特徵
+        for i in range(features['mfcc'].shape[0]):
+            df[f'mfcc_{i+1}'] = features['mfcc'][i]
+        
+        # 添加F0特徵
+        df['f0'] = features['f0'][0]
+        df['f0_delta'] = features['f0'][1]
+        
+        # 添加能量特徵
+        df['energy'] = features['energy'][0]
+        df['energy_delta'] = features['energy'][1]
+        
+        # 添加ZCR特徵
+        df['zcr'] = features['zcr'][0]
+        df['zcr_delta'] = features['zcr'][1]
+        
+        # 保存CSV文件
+        csv_path = f'features/csv/{timestamp}_{base_name}_features.csv'
+        df.to_csv(csv_path)
+        logger.info(f"特徵數據已保存為CSV: {csv_path}")
+        
+        # 計算並保存統計數據
+        stats = pd.DataFrame()
+        for col in df.columns:
+            stats.loc['mean', col] = df[col].mean()
+            stats.loc['std', col] = df[col].std()
+            stats.loc['min', col] = df[col].min()
+            stats.loc['max', col] = df[col].max()
+        
+        # 保存統計數據
+        stats_path = f'features/csv/{timestamp}_{base_name}_statistics.csv'
+        stats.to_csv(stats_path)
+        logger.info(f"特徵統計數據已保存為CSV: {stats_path}")
+        
+        return csv_path, stats_path
+
     def extract_features(self, audio_path):
         """提取所有特徵"""
         # 載入音頻
@@ -68,34 +120,66 @@ class FeatureExtractor:
         return features, quality_metrics
         
     def _preprocess_audio(self, audio):
-        """音頻預處理"""
-        # 降噪
-        audio = nr.reduce_noise(
-            y=audio,
-            sr=self.sample_rate,
-            stationary=True,
-            prop_decrease=0.95
-        )
+        """預處理音頻"""
+        # 確保音頻數據有效
+        audio = np.nan_to_num(audio)
         
-        # VAD
+        # 標準化音頻
+        if np.std(audio) > 0:
+            audio = (audio - np.mean(audio)) / np.std(audio)
+        
+        # 應用預強調
+        audio = librosa.effects.preemphasis(audio)
+        
+        # 應用VAD
         audio = self._apply_vad(audio)
         
-        # 音量正規化
-        audio = self._normalize_volume(audio)
+        # 確保音頻數據有限且有效
+        audio = np.clip(audio, -1.0, 1.0)
+        audio = np.nan_to_num(audio)
         
         return audio
         
     def _apply_vad(self, audio):
-        """應用VAD"""
-        frame_size = int(self.frame_duration * self.sample_rate / 1000)
-        frames = librosa.util.frame(audio, frame_length=frame_size, hop_length=frame_size)
+        """應用語音活動檢測"""
+        # 計算幀長和跳躍長度
+        frame_length = int(self.vad_frame_duration * self.sample_rate)
+        hop_length = int(frame_length / 2)
+        
+        # 確保音頻長度足夠
+        if len(audio) < frame_length:
+            # 如果音頻太短，進行填充
+            audio = np.pad(audio, (0, frame_length - len(audio)))
+        
+        # 使用webrtcvad進行VAD
+        frames = []
+        for i in range(0, len(audio) - frame_length + 1, hop_length):
+            frame = audio[i:i + frame_length]
+            # 確保幀長度正確
+            if len(frame) == frame_length:
+                frames.append(frame)
         
         speech_frames = []
-        for frame in frames.T:
-            is_speech = self.vad.is_speech(frame.astype(np.int16).tobytes(), self.sample_rate)
-            speech_frames.extend([1 if is_speech else 0] * frame_size)
-            
-        speech_frames = np.array(speech_frames[:len(audio)])
+        for frame in frames:
+            # 將float32轉換為int16
+            frame_int16 = (frame * 32768).astype(np.int16)
+            try:
+                is_speech = self.vad.is_speech(frame_int16.tobytes(), self.sample_rate)
+                speech_frames.append(is_speech)
+            except Exception as e:
+                logger.warning(f"VAD處理出錯: {e}")
+                speech_frames.append(True)  # 如果處理出錯，假設為語音
+        
+        # 將語音幀轉換為與原始音頻相同長度的數組
+        speech_frames = np.array(speech_frames)
+        speech_frames = np.repeat(speech_frames, hop_length)
+        
+        # 確保長度匹配
+        if len(speech_frames) > len(audio):
+            speech_frames = speech_frames[:len(audio)]
+        elif len(speech_frames) < len(audio):
+            speech_frames = np.pad(speech_frames, (0, len(audio) - len(speech_frames)))
+        
         return audio * speech_frames
         
     def _normalize_volume(self, audio):
@@ -106,67 +190,106 @@ class FeatureExtractor:
         
     def extract_mfcc(self, audio):
         """提取MFCC特徵"""
-        mfcc = librosa.feature.mfcc(
-            y=audio,
-            sr=self.sample_rate,
-            n_mfcc=13,
-            n_fft=2048,
-            hop_length=512
-        )
-        return mfcc
+        try:
+            # 確保音頻數據有效
+            audio = np.nan_to_num(audio)
+            audio = np.clip(audio, -1.0, 1.0)
+            
+            # 提取MFCC
+            mfcc = librosa.feature.mfcc(
+                y=audio,
+                sr=self.sample_rate,
+                n_mfcc=self.n_mfcc,
+                n_fft=self.n_fft,
+                hop_length=self.hop_length
+            )
+            
+            # 計算delta特徵
+            mfcc_delta = librosa.feature.delta(mfcc)
+            mfcc_delta2 = librosa.feature.delta(mfcc, order=2)
+            
+            return np.vstack([mfcc, mfcc_delta, mfcc_delta2])
+        except Exception as e:
+            logger.error(f"MFCC提取錯誤: {e}")
+            # 返回空特徵
+            return np.zeros((self.n_mfcc * 3, 1))
         
     def extract_f0(self, audio):
-        """提取F0特徵（改進版本）"""
-        # 預處理
-        audio = librosa.effects.preemphasis(audio)
-        
-        # 使用改進的PYIN算法
-        f0, voiced_flag, voiced_probs = librosa.pyin(
-            audio,
-            fmin=librosa.note_to_hz('C2'),
-            fmax=librosa.note_to_hz('C7'),
-            sr=self.sample_rate,
-            frame_length=2048,
-            hop_length=512,
-            center=True,
-            pad_mode='reflect'
-        )
-        
-        # 後處理
-        f0 = self._post_process_f0(f0, voiced_flag)
-        
-        return f0
-        
-    def _post_process_f0(self, f0, voiced_flag):
-        """F0後處理"""
-        # 中值濾波
-        f0 = signal.medfilt(f0, kernel_size=5)
-        
-        # Savitzky-Golay濾波
-        f0 = signal.savgol_filter(f0, window_length=5, polyorder=2)
-        
-        # 只保留有聲音的部分
-        f0[~voiced_flag] = 0
-        
-        return f0
+        """提取F0特徵"""
+        try:
+            # 確保音頻數據有效
+            audio = np.nan_to_num(audio)
+            audio = np.clip(audio, -1.0, 1.0)
+            
+            # 提取F0
+            f0, voiced_flag, voiced_probs = librosa.pyin(
+                audio,
+                fmin=librosa.note_to_hz('C2'),
+                fmax=librosa.note_to_hz('C7'),
+                sr=self.sample_rate,
+                frame_length=self.n_fft,
+                hop_length=self.hop_length,
+                center=True,
+                pad_mode='reflect'
+            )
+            
+            # 處理無效值
+            f0 = np.nan_to_num(f0)
+            
+            # 計算delta特徵
+            f0_delta = librosa.feature.delta(f0.reshape(1, -1))
+            
+            return np.vstack([f0.reshape(1, -1), f0_delta])
+        except Exception as e:
+            logger.error(f"F0提取錯誤: {e}")
+            # 返回空特徵
+            return np.zeros((2, 1))
         
     def extract_energy(self, audio):
         """提取能量特徵"""
-        energy = librosa.feature.rms(
-            y=audio,
-            frame_length=2048,
-            hop_length=512
-        )
-        return energy
+        try:
+            # 確保音頻數據有效
+            audio = np.nan_to_num(audio)
+            audio = np.clip(audio, -1.0, 1.0)
+            
+            # 計算短時能量
+            energy = librosa.feature.rms(
+                y=audio,
+                frame_length=self.n_fft,
+                hop_length=self.hop_length
+            )
+            
+            # 計算delta特徵
+            energy_delta = librosa.feature.delta(energy)
+            
+            return np.vstack([energy, energy_delta])
+        except Exception as e:
+            logger.error(f"能量特徵提取錯誤: {e}")
+            # 返回空特徵
+            return np.zeros((2, 1))
         
     def extract_zcr(self, audio):
-        """提取過零率特徵"""
-        zcr = librosa.feature.zero_crossing_rate(
-            y=audio,
-            frame_length=2048,
-            hop_length=512
-        )
-        return zcr
+        """提取零交叉率特徵"""
+        try:
+            # 確保音頻數據有效
+            audio = np.nan_to_num(audio)
+            audio = np.clip(audio, -1.0, 1.0)
+            
+            # 計算零交叉率
+            zcr = librosa.feature.zero_crossing_rate(
+                y=audio,
+                frame_length=self.n_fft,
+                hop_length=self.hop_length
+            )
+            
+            # 計算delta特徵
+            zcr_delta = librosa.feature.delta(zcr)
+            
+            return np.vstack([zcr, zcr_delta])
+        except Exception as e:
+            logger.error(f"零交叉率提取錯誤: {e}")
+            # 返回空特徵
+            return np.zeros((2, 1))
         
     def evaluate_features(self, features):
         """評估特徵質量"""
@@ -218,15 +341,19 @@ class FeatureExtractor:
         """保存特徵"""
         # 創建保存目錄
         os.makedirs('features', exist_ok=True)
+        os.makedirs('features/csv', exist_ok=True)
         
         # 生成文件名
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         base_name = os.path.splitext(os.path.basename(audio_path))[0]
-        save_path = f'features/{timestamp}_{base_name}_processed_features.npz'
         
-        # 保存特徵
-        np.savez(save_path, **features)
-        logger.info(f'特徵提取結果已保存至: {save_path}')
+        # 保存原始特徵為NPZ
+        npz_path = f'features/{timestamp}_{base_name}_processed_features.npz'
+        np.savez(npz_path, **features)
+        logger.info(f'特徵提取結果已保存至: {npz_path}')
+        
+        # 保存特徵為CSV
+        csv_path, stats_path = self._save_features_to_csv(features, timestamp, base_name)
         
         # 保存可視化
         self._save_visualization(features, timestamp, base_name)
