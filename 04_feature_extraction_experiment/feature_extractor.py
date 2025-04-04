@@ -12,6 +12,7 @@ import noisereduce as nr
 from scipy import signal
 from pydub import AudioSegment
 import scipy.signal
+import soundfile as sf
 
 class AudioFeatureExtractor:
     def __init__(self):
@@ -20,6 +21,34 @@ class AudioFeatureExtractor:
         self.frame_length = 2048  # 幀長度
         self.hop_length = 512  # 跳躍長度
         
+    def load_audio(self, audio_path, sr=None):
+        """使用 soundfile 讀取音頻文件
+        
+        Args:
+            audio_path: 音頻文件路徑
+            sr: 目標採樣率，如果為None則使用原始採樣率
+            
+        Returns:
+            tuple: (音頻數據, 採樣率)
+        """
+        try:
+            # 使用 soundfile 讀取音頻
+            y, file_sr = sf.read(audio_path)
+            
+            # 如果是立體聲，轉換為單聲道
+            if len(y.shape) > 1:
+                y = np.mean(y, axis=1)
+            
+            # 如果指定了採樣率且與文件不同，進行重採樣
+            if sr is not None and sr != file_sr:
+                y = librosa.resample(y, orig_sr=file_sr, target_sr=sr)
+                return y, sr
+            return y, file_sr
+            
+        except Exception as e:
+            print(f"音頻讀取錯誤 {audio_path}: {str(e)}")
+            return None, None
+            
     def preprocess_audio(self, y):
         """音頻預處理：降噪和正規化"""
         try:
@@ -54,25 +83,19 @@ class AudioFeatureExtractor:
             MFCC 特徵字典
         """
         try:
-            # 讀取音頻文件
-            y, sr = librosa.load(audio_path, sr=None)
-            
+            # 使用 soundfile 讀取音頻
+            y, sr = self.load_audio(audio_path)
+            if y is None or sr is None:
+                return None
+                
             # 確保音頻數據是有效的
             if len(y) == 0:
                 raise ValueError("音頻文件為空")
             
             # 音頻預處理
-            # 1. 正規化音量
-            y = librosa.util.normalize(y)
-            
-            # 2. 去除靜音段
-            y, _ = librosa.effects.trim(y, top_db=30)
-            
-            # 3. 應用預加重濾波
-            y = librosa.effects.preemphasis(y)
-            
-            # 4. 應用窗函數
-            y = y * np.hanning(len(y))
+            y = self.preprocess_audio(y)
+            if y is None:
+                return None
             
             # 提取 MFCC 特徵
             mfcc = librosa.feature.mfcc(
@@ -86,14 +109,13 @@ class AudioFeatureExtractor:
             )
             
             # 特徵後處理
-            # 1. 計算 delta 特徵
             delta = librosa.feature.delta(mfcc)
             delta2 = librosa.feature.delta(mfcc, order=2)
             
-            # 2. 合併特徵
+            # 合併特徵
             features = np.vstack([mfcc, delta, delta2])
             
-            # 3. 正規化
+            # 正規化
             features = (features - np.mean(features, axis=1, keepdims=True)) / \
                       (np.std(features, axis=1, keepdims=True) + 1e-8)
             
@@ -134,9 +156,11 @@ class AudioFeatureExtractor:
     def extract_f0(self, audio_path):
         """提取基頻F0特徵"""
         try:
-            # 讀取音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
-            
+            # 使用 soundfile 讀取音頻
+            y, sr = self.load_audio(audio_path, sr=self.sr)
+            if y is None or sr is None:
+                return None
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
@@ -190,9 +214,11 @@ class AudioFeatureExtractor:
     def extract_energy(self, audio_path):
         """提取能量特徵"""
         try:
-            # 讀取音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
-            
+            # 使用 soundfile 讀取音頻
+            y, sr = self.load_audio(audio_path, sr=self.sr)
+            if y is None or sr is None:
+                return None
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
@@ -246,9 +272,11 @@ class AudioFeatureExtractor:
     def extract_zcr(self, audio_path):
         """提取過零率特徵"""
         try:
-            # 讀取音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
-            
+            # 使用 soundfile 讀取音頻
+            y, sr = self.load_audio(audio_path, sr=self.sr)
+            if y is None or sr is None:
+                return None
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
@@ -432,9 +460,11 @@ class AudioFeatureExtractor:
     def extract_all_features(self, audio_path):
         """提取所有特徵"""
         try:
-            # 讀取音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
-            
+            # 使用 soundfile 讀取音頻
+            y, sr = self.load_audio(audio_path, sr=self.sr)
+            if y is None or sr is None:
+                return None
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
