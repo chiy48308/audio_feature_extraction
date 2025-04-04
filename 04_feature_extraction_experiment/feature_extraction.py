@@ -62,6 +62,10 @@ class FeatureExtractor:
             frame_length_samples = int(frame_length * sr)
             frame_shift_samples = int(frame_shift * sr)
             
+            # 確保幀長度足夠長以進行基頻提取
+            min_frame_length = int(491 * sr / 16000)  # 根據16kHz採樣率調整幀長度
+            frame_length_samples = max(frame_length_samples, min_frame_length)
+            
             # 計算總幀數
             n_frames = 1 + (len(y) - frame_length_samples) // frame_shift_samples
             
@@ -88,10 +92,10 @@ class FeatureExtractor:
                 )
                 mfcc_features[i] = mfcc[:, 0]
                 
-                # 提取F0
+                # 提取F0（使用更高的最小頻率和更長的幀長度）
                 f0, voiced_flag, voiced_probs = librosa.pyin(
                     frame,
-                    fmin=librosa.note_to_hz('C2'),
+                    fmin=80.0,  # 提高最小頻率
                     fmax=librosa.note_to_hz('C7'),
                     sr=sr,
                     frame_length=frame_length_samples,
@@ -99,21 +103,22 @@ class FeatureExtractor:
                 )
                 f0_features[i] = f0[0] if not np.isnan(f0[0]) else 0
                 
-                # 提取能量
+                # 提取能量（使用預加重以增強高頻）
+                preemph_frame = librosa.effects.preemphasis(frame)
                 energy = librosa.feature.rms(
-                    y=frame,
+                    y=preemph_frame,
                     frame_length=frame_length_samples,
                     hop_length=frame_length_samples
                 )
-                energy_features[i] = energy[0]
+                energy_features[i] = energy[0, 0]
                 
-                # 提取過零率
+                # 提取過零率（使用預加重以增強高頻）
                 zcr = librosa.feature.zero_crossing_rate(
-                    frame,
+                    preemph_frame,
                     frame_length=frame_length_samples,
                     hop_length=frame_length_samples
                 )
-                zcr_features[i] = zcr[0]
+                zcr_features[i] = zcr[0, 0]
             
             # 正規化特徵
             mfcc_features = (mfcc_features - np.mean(mfcc_features, axis=0)) / (np.std(mfcc_features, axis=0) + 1e-8)
@@ -209,8 +214,8 @@ class FeatureExtractor:
             
             # 評估過零率質量
             zcr = features['zcr']
-            quality_metrics['zcr_snr'] = this._calculate_snr(zcr)
-            quality_metrics['zcr_stability'] = this._calculate_stability(zcr)
+            quality_metrics['zcr_snr'] = self._calculate_snr(zcr)
+            quality_metrics['zcr_stability'] = self._calculate_stability(zcr)
             
             return quality_metrics
             
@@ -229,8 +234,15 @@ class FeatureExtractor:
         """
         signal = np.mean(feature, axis=0)
         noise = feature - signal
-        snr = 10 * np.log10(np.sum(signal**2) / (np.sum(noise**2) + 1e-8))
-        return snr
+        signal_power = np.sum(signal**2)
+        noise_power = np.sum(noise**2)
+        
+        if noise_power == 0:
+            return float('inf')
+        elif signal_power == 0:
+            return float('-inf')
+        else:
+            return 10 * np.log10(signal_power / (noise_power + 1e-8))
 
     def _calculate_stability(self, feature: np.ndarray) -> float:
         """計算特徵穩定性
