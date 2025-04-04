@@ -39,6 +39,26 @@ class AudioFeatureExtractor:
             'f0_quality_score': 0.0  # 0分質量評分
         }
         
+    def _adjust_frame_length(self, audio_length: int, desired_frame_length: int) -> int:
+        """根據音頻長度動態調整幀長度
+        
+        Args:
+            audio_length: 音頻長度（採樣點數）
+            desired_frame_length: 期望的幀長度
+            
+        Returns:
+            調整後的幀長度
+        """
+        # 如果音頻長度小於期望幀長度，則調整幀長度
+        if audio_length < desired_frame_length:
+            # 確保幀長度是2的冪次方（對於FFT效率）
+            adjusted_length = 2 ** int(np.log2(audio_length))
+            # 確保幀長度至少為64（最小有效幀長度）
+            adjusted_length = max(64, adjusted_length)
+            print(f"音頻長度({audio_length})小於期望幀長度({desired_frame_length})，已調整幀長度為{adjusted_length}")
+            return adjusted_length
+        return desired_frame_length
+        
     def load_audio(self, audio_path, sr=None):
         """
         讀取音頻文件並返回音頻數據和採樣率。
@@ -153,6 +173,12 @@ class AudioFeatureExtractor:
             if len(y) == 0:
                 raise ValueError("音頻文件為空")
             
+            # 檢查音頻長度並調整幀長度
+            audio_length = len(y)
+            desired_frame_length = 2048  # 原本的幀長度
+            adjusted_frame_length = self._adjust_frame_length(audio_length, desired_frame_length)
+            adjusted_hop_length = min(512, adjusted_frame_length // 4)
+            
             # 音頻預處理
             y = self.preprocess_audio(y)
             if y is None:
@@ -163,8 +189,8 @@ class AudioFeatureExtractor:
                 y=y,
                 sr=sr,
                 n_mfcc=n_mfcc,
-                n_fft=2048,
-                hop_length=512,
+                n_fft=adjusted_frame_length,
+                hop_length=adjusted_hop_length,
                 window='hann',
                 center=True
             )
@@ -222,6 +248,11 @@ class AudioFeatureExtractor:
             if y is None:
                 return self._get_empty_f0_features()
             
+            # 檢查音頻長度並調整幀長度
+            audio_length = len(y)
+            desired_frame_length = 2937  # 原本的幀長度
+            adjusted_frame_length = self._adjust_frame_length(audio_length, desired_frame_length)
+            
             # 預處理
             y = self.preprocess_audio(y)
             
@@ -235,8 +266,8 @@ class AudioFeatureExtractor:
                 fmin=librosa.note_to_hz('C1'),  # 最低頻率
                 fmax=librosa.note_to_hz('C8'),  # 最高頻率
                 sr=sr,
-                frame_length=2937,  # 增加幀長到2937以適應最低頻率
-                hop_length=512,
+                frame_length=adjusted_frame_length,  # 使用調整後的幀長度
+                hop_length=min(512, adjusted_frame_length // 4),  # 調整跳躍長度
                 fill_na=None
             )
             
@@ -244,10 +275,11 @@ class AudioFeatureExtractor:
             valid_f0 = f0[voiced_flag]
             if len(valid_f0) > 0:
                 # 使用中值濾波去除異常值
-                valid_f0 = scipy.signal.medfilt(valid_f0, kernel_size=5)
+                valid_f0 = scipy.signal.medfilt(valid_f0, kernel_size=min(5, len(valid_f0)))
                 
                 # 使用Savitzky-Golay濾波進行平滑
-                valid_f0 = scipy.signal.savgol_filter(valid_f0, window_length=11, polyorder=3)
+                if len(valid_f0) >= 11:
+                    valid_f0 = scipy.signal.savgol_filter(valid_f0, window_length=11, polyorder=3)
                 
                 # 計算局部和全局RMSE
                 local_rmse = np.sqrt(np.mean(np.diff(valid_f0) ** 2))
@@ -306,6 +338,12 @@ class AudioFeatureExtractor:
             if y is None or sr is None:
                 return None
                 
+            # 檢查音頻長度並調整幀長度
+            audio_length = len(y)
+            desired_frame_length = self.frame_length
+            adjusted_frame_length = self._adjust_frame_length(audio_length, desired_frame_length)
+            adjusted_hop_length = min(self.hop_length, adjusted_frame_length // 4)
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
@@ -314,8 +352,8 @@ class AudioFeatureExtractor:
             # 計算RMS能量
             energy = librosa.feature.rms(
                 y=y,
-                frame_length=self.frame_length,
-                hop_length=self.hop_length
+                frame_length=adjusted_frame_length,
+                hop_length=adjusted_hop_length
             )
             
             # 計算統計值
@@ -364,6 +402,12 @@ class AudioFeatureExtractor:
             if y is None or sr is None:
                 return None
                 
+            # 檢查音頻長度並調整幀長度
+            audio_length = len(y)
+            desired_frame_length = self.frame_length
+            adjusted_frame_length = self._adjust_frame_length(audio_length, desired_frame_length)
+            adjusted_hop_length = min(self.hop_length, adjusted_frame_length // 4)
+                
             # 預處理音頻
             y = self.preprocess_audio(y)
             if y is None:
@@ -372,8 +416,8 @@ class AudioFeatureExtractor:
             # 計算過零率
             zcr = librosa.feature.zero_crossing_rate(
                 y=y,
-                frame_length=self.frame_length,
-                hop_length=self.hop_length
+                frame_length=adjusted_frame_length,
+                hop_length=adjusted_hop_length
             )
             
             # 計算統計值
