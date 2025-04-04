@@ -253,55 +253,63 @@ class AudioFeatureExtractor:
             desired_frame_length = 2937  # 原本的幀長度
             adjusted_frame_length = self._adjust_frame_length(audio_length, desired_frame_length)
             
-            # 預處理
-            y = self.preprocess_audio(y)
+            # 增強預處理
+            # 1. 應用預加重濾波器
+            y = librosa.effects.preemphasis(y, coef=0.97)
             
-            # 使用更嚴格的預處理
-            y = librosa.effects.preemphasis(y)  # 預加重
-            y = librosa.effects.trim(y, top_db=30)[0]  # 去除靜音
+            # 2. 去除靜音段
+            y, _ = librosa.effects.trim(y, top_db=30)
             
-            # 使用更寬的頻率範圍和更嚴格的參數
+            # 3. 應用中值濾波去除突發噪聲
+            y = scipy.signal.medfilt(y, kernel_size=3)
+            
+            # 4. 正規化音量
+            y = librosa.util.normalize(y)
+            
+            # 使用更優化的F0提取參數
             f0, voiced_flag, voiced_probs = librosa.pyin(
                 y,
-                fmin=librosa.note_to_hz('C1'),  # 最低頻率
-                fmax=librosa.note_to_hz('C8'),  # 最高頻率
+                fmin=librosa.note_to_hz('C1'),  # 降低最低頻率以捕獲更多基頻
+                fmax=librosa.note_to_hz('C8'),  # 提高最高頻率以捕獲更高音
                 sr=sr,
-                frame_length=adjusted_frame_length,  # 使用調整後的幀長度
-                hop_length=min(512, adjusted_frame_length // 4),  # 調整跳躍長度
-                fill_na=None
+                frame_length=adjusted_frame_length,
+                hop_length=min(512, adjusted_frame_length // 4),
+                fill_na=None,
+                center=True,  # 確保幀居中
+                pad_mode='reflect'  # 使用反射填充模式
             )
             
-            # 後處理：使用中值濾波去除異常值
+            # 後處理：使用更複雜的平滑和濾波
             valid_f0 = f0[voiced_flag]
             if len(valid_f0) > 0:
-                # 使用中值濾波去除異常值
+                # 1. 使用中值濾波去除異常值
                 valid_f0 = scipy.signal.medfilt(valid_f0, kernel_size=min(5, len(valid_f0)))
                 
-                # 使用Savitzky-Golay濾波進行平滑
+                # 2. 使用Savitzky-Golay濾波進行平滑
                 if len(valid_f0) >= 11:
                     valid_f0 = scipy.signal.savgol_filter(valid_f0, window_length=11, polyorder=3)
                 
-                # 計算局部和全局RMSE
+                # 3. 計算局部和全局RMSE
                 local_rmse = np.sqrt(np.mean(np.diff(valid_f0) ** 2))
                 global_rmse = np.sqrt(np.mean((valid_f0 - np.mean(valid_f0)) ** 2))
                 
-                # 計算F0的穩定性
-                f0_stability = np.std(valid_f0) / np.mean(valid_f0)
+                # 4. 計算F0的穩定性（使用改進的方法）
+                f0_stability = np.std(valid_f0) / (np.mean(valid_f0) + 1e-8)
                 
-                # 計算F0的準確性（基於局部和全局RMSE）
-                accuracy = 1.0 if local_rmse < 5 and global_rmse < 10 else 0.5
+                # 5. 計算F0的準確性（使用更嚴格的標準）
+                accuracy = 1.0 if local_rmse < 3 and global_rmse < 5 else 0.5
                 
-                # 計算RMSE的有效性（更嚴格的標準）
-                rmse_valid = local_rmse < 5 and global_rmse < 10
+                # 6. 計算RMSE的有效性（更嚴格的標準）
+                rmse_valid = local_rmse < 3 and global_rmse < 5
                 
-                # 計算穩定性（更嚴格的標準）
-                stability = f0_stability < 0.1
+                # 7. 計算穩定性（更嚴格的標準）
+                stability = f0_stability < 0.05
                 
-                # 計算質量分數（更嚴格的標準）
+                # 8. 計算質量分數（使用加權平均）
                 quality_score = (
-                    0.4 * (1.0 if local_rmse < 5 else 0.5) +
-                    0.3 * (1.0 if global_rmse < 10 else 0.5) +
-                    0.3 * (1.0 if f0_stability < 0.1 else 0.5)
+                    0.4 * (1.0 if local_rmse < 3 else 0.5) +
+                    0.3 * (1.0 if global_rmse < 5 else 0.5) +
+                    0.3 * (1.0 if f0_stability < 0.05 else 0.5)
                 )
             else:
                 local_rmse = np.inf
@@ -312,7 +320,7 @@ class AudioFeatureExtractor:
                 stability = False
                 quality_score = 0.0
             
-            # 計算缺失率
+            # 計算缺失率（使用改進的方法）
             missing_rate = np.sum(~voiced_flag) / len(f0)
             
             return {

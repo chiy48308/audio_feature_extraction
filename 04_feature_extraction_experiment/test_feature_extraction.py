@@ -12,7 +12,7 @@ def main():
     extractor = FeatureExtractor(output_dir="features")
     
     # 測試音頻文件路徑
-    audio_path = "test_audio.wav"  # 請確保此文件存在
+    audio_path = "processed_audio/session_20250224_165816_Lesson01_Pete_Student01_utterance01_processed.wav"
     
     try:
         # 提取特徵
