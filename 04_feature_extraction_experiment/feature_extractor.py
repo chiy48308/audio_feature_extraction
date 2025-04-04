@@ -43,66 +43,65 @@ class AudioFeatureExtractor:
             print(f"音頻預處理錯誤: {str(e)}")
             return None
             
-    def extract_mfcc(self, audio_path):
-        """提取MFCC特徵"""
+    def extract_mfcc(self, audio_path: str, n_mfcc: int = 13) -> np.ndarray:
+        """提取 MFCC 特徵
+        
+        Args:
+            audio_path: 音頻文件路徑
+            n_mfcc: MFCC 係數數量
+            
+        Returns:
+            MFCC 特徵矩陣
+        """
         try:
-            # 讀取音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
+            # 讀取音頻文件
+            y, sr = librosa.load(audio_path, sr=None)
             
-            # 預處理音頻
-            y = self.preprocess_audio(y)
-            if y is None:
-                return None
+            # 確保音頻數據是有效的
+            if len(y) == 0:
+                raise ValueError("音頻文件為空")
             
-            # 提取MFCC特徵 - 使用更優化的參數
+            # 音頻預處理
+            # 1. 正規化音量
+            y = librosa.util.normalize(y)
+            
+            # 2. 去除靜音段
+            y, _ = librosa.effects.trim(y, top_db=30)
+            
+            # 3. 應用預加重濾波
+            y = librosa.effects.preemphasis(y)
+            
+            # 4. 應用窗函數
+            y = y * np.hanning(len(y))
+            
+            # 提取 MFCC 特徵
             mfcc = librosa.feature.mfcc(
-                y=y, 
-                sr=self.sr,
-                n_mfcc=self.n_mfcc,  # 使用類初始化中定義的n_mfcc
+                y=y,
+                sr=sr,
+                n_mfcc=n_mfcc,
                 n_fft=2048,
                 hop_length=512,
-                win_length=2048,
                 window='hann',
-                n_mels=160,  # 增加mel濾波器數量，從128增加到160
-                fmin=20,     # 設置最小頻率
-                fmax=8000    # 設置最大頻率
+                center=True
             )
             
-            # 使用更強的中值濾波進行平滑
-            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(5, 5))  # 增加核大小，從(3,3)到(5,5)
+            # 特徵後處理
+            # 1. 計算 delta 特徵
+            delta = librosa.feature.delta(mfcc)
+            delta2 = librosa.feature.delta(mfcc, order=2)
             
-            # 計算統計特徵
-            mfcc_mean = np.mean(mfcc)
-            mfcc_std = np.std(mfcc)
-            mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
+            # 2. 合併特徵
+            features = np.vstack([mfcc, delta, delta2])
             
-            # 評估特徵穩定性 - 調整閾值
-            mfcc_stability = mfcc_cv < 3.0 if mfcc_mean != 0 else False  # 放寬穩定性閾值，從2.8到3.0
-            mfcc_range_valid = -100 < mfcc_mean < 100
-            mfcc_std_valid = 0 <= mfcc_std < 50
+            # 3. 正規化
+            features = (features - np.mean(features, axis=1, keepdims=True)) / \
+                      (np.std(features, axis=1, keepdims=True) + 1e-8)
             
-            # 添加特徵質量評分
-            mfcc_quality_score = 1.0
-            if not mfcc_stability:
-                mfcc_quality_score -= 0.3
-            if not mfcc_range_valid:
-                mfcc_quality_score -= 0.3
-            if not mfcc_std_valid:
-                mfcc_quality_score -= 0.3
-            mfcc_quality_score = max(0.0, mfcc_quality_score)
+            return features
             
-            return {
-                'mfcc_mean': mfcc_mean,
-                'mfcc_std': mfcc_std,
-                'mfcc_cv': mfcc_cv,
-                'mfcc_stability': mfcc_stability,
-                'mfcc_range_valid': mfcc_range_valid,
-                'mfcc_std_valid': mfcc_std_valid,
-                'mfcc_quality_score': mfcc_quality_score
-            }
         except Exception as e:
-            print(f"MFCC提取失敗: {str(e)}")
-            return None
+            print(f"提取 MFCC 特徵時發生錯誤: {str(e)}")
+            return np.array([])
             
     def extract_f0(self, audio_path):
         """提取基頻F0特徵"""
