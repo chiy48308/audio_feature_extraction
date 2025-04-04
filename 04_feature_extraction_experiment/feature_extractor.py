@@ -262,44 +262,207 @@ class AudioFeatureExtractor:
             print(f"過零率特徵提取錯誤 {audio_path}: {str(e)}")
             return None
             
+    def extract_spectral_features(self, y, sr):
+        """提取頻譜特徵
+        
+        Args:
+            y: 音頻信號
+            sr: 採樣率
+            
+        Returns:
+            頻譜特徵字典
+        """
+        try:
+            # 計算頻譜質心
+            spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
+            
+            # 計算頻譜帶寬
+            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]
+            
+            # 計算頻譜滾降
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
+            
+            # 計算頻譜對比度
+            spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+            
+            # 計算統計特徵
+            features = {
+                'spectral_centroid_mean': np.mean(spectral_centroids),
+                'spectral_centroid_std': np.std(spectral_centroids),
+                'spectral_bandwidth_mean': np.mean(spectral_bandwidth),
+                'spectral_bandwidth_std': np.std(spectral_bandwidth),
+                'spectral_rolloff_mean': np.mean(spectral_rolloff),
+                'spectral_rolloff_std': np.std(spectral_rolloff),
+                'spectral_contrast_mean': np.mean(spectral_contrast),
+                'spectral_contrast_std': np.std(spectral_contrast)
+            }
+            
+            return features
+        except Exception as e:
+            print(f"頻譜特徵提取錯誤: {str(e)}")
+            return None
+
+    def extract_harmonic_features(self, y, sr):
+        """提取諧波特徵
+        
+        Args:
+            y: 音頻信號
+            sr: 採樣率
+            
+        Returns:
+            諧波特徵字典
+        """
+        try:
+            # 計算諧波能量
+            harmonic = librosa.effects.harmonic(y)
+            harmonic_energy = np.sum(harmonic ** 2)
+            
+            # 計算諧波比例
+            harmonic_ratio = harmonic_energy / (np.sum(y ** 2) + 1e-8)
+            
+            # 計算諧波頻率
+            harmonic_freq = librosa.feature.spectral_centroid(y=harmonic, sr=sr)[0]
+            
+            features = {
+                'harmonic_energy': harmonic_energy,
+                'harmonic_ratio': harmonic_ratio,
+                'harmonic_freq_mean': np.mean(harmonic_freq),
+                'harmonic_freq_std': np.std(harmonic_freq)
+            }
+            
+            return features
+        except Exception as e:
+            print(f"諧波特徵提取錯誤: {str(e)}")
+            return None
+
+    def extract_timbre_features(self, y, sr):
+        """提取音色特徵
+        
+        Args:
+            y: 音頻信號
+            sr: 採樣率
+            
+        Returns:
+            音色特徵字典
+        """
+        try:
+            # 計算梅爾頻譜
+            mel_spec = librosa.feature.melspectrogram(y=y, sr=sr)
+            
+            # 計算色度特徵
+            chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+            
+            # 計算音色特徵
+            mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+            
+            features = {
+                'mel_energy_mean': np.mean(mel_spec),
+                'mel_energy_std': np.std(mel_spec),
+                'chroma_mean': np.mean(chroma),
+                'chroma_std': np.std(chroma),
+                'mfcc_mean': np.mean(mfcc),
+                'mfcc_std': np.std(mfcc)
+            }
+            
+            return features
+        except Exception as e:
+            print(f"音色特徵提取錯誤: {str(e)}")
+            return None
+
+    def extract_rhythm_features(self, y, sr):
+        """提取節奏特徵
+        
+        Args:
+            y: 音頻信號
+            sr: 採樣率
+            
+        Returns:
+            節奏特徵字典
+        """
+        try:
+            # 計算節奏強度
+            onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+            
+            # 計算節奏週期性
+            tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
+            
+            # 計算節奏規律性
+            rhythm_regularity = np.std(onset_env) / (np.mean(onset_env) + 1e-8)
+            
+            features = {
+                'tempo': tempo,
+                'rhythm_regularity': rhythm_regularity,
+                'onset_strength_mean': np.mean(onset_env),
+                'onset_strength_std': np.std(onset_env)
+            }
+            
+            return features
+        except Exception as e:
+            print(f"節奏特徵提取錯誤: {str(e)}")
+            return None
+
     def extract_all_features(self, audio_path):
         """提取所有特徵"""
-        features = {}
-        
-        # 提取各項特徵
-        mfcc = self.extract_mfcc(audio_path)
-        if mfcc is not None:
-            features.update(mfcc)  # 直接更新MFCC特徵，而不是嵌套存儲
-        f0_features = self.extract_f0(audio_path)
-        if f0_features:
-            features.update(f0_features)
-        energy_features = self.extract_energy(audio_path)
-        if energy_features:
-            features.update(energy_features)
-        zcr_features = self.extract_zcr(audio_path)
-        if zcr_features:
-            features.update(zcr_features)
+        try:
+            # 讀取音頻
+            y, sr = librosa.load(audio_path, sr=self.sr)
             
-        # 添加檔案名稱
-        features['filename'] = os.path.basename(audio_path)
-        
-        # 計算總體特徵質量評分
-        quality_scores = []
-        if 'mfcc_quality_score' in features:
-            quality_scores.append(features['mfcc_quality_score'])
-        if 'f0_quality_score' in features:
-            quality_scores.append(features['f0_quality_score'])
-        if 'energy_quality_score' in features:
-            quality_scores.append(features['energy_quality_score'])
-        if 'zcr_quality_score' in features:
-            quality_scores.append(features['zcr_quality_score'])
+            # 預處理音頻
+            y = self.preprocess_audio(y)
+            if y is None:
+                return None
             
-        if quality_scores:
-            features['overall_quality_score'] = np.mean(quality_scores)
-        else:
-            features['overall_quality_score'] = 0.0
-        
-        return features
+            # 提取基本特徵
+            features = {}
+            
+            # MFCC特徵
+            mfcc_features = self.extract_mfcc(audio_path)
+            if mfcc_features is not None:
+                features.update(mfcc_features)
+            
+            # F0特徵
+            f0_features = self.extract_f0(audio_path)
+            if f0_features:
+                features.update(f0_features)
+            
+            # 能量特徵
+            energy_features = self.extract_energy(audio_path)
+            if energy_features:
+                features.update(energy_features)
+            
+            # ZCR特徵
+            zcr_features = self.extract_zcr(audio_path)
+            if zcr_features:
+                features.update(zcr_features)
+            
+            # 頻譜特徵
+            spectral_features = self.extract_spectral_features(y, sr)
+            if spectral_features:
+                features.update(spectral_features)
+            
+            # 諧波特徵
+            harmonic_features = self.extract_harmonic_features(y, sr)
+            if harmonic_features:
+                features.update(harmonic_features)
+            
+            # 音色特徵
+            timbre_features = self.extract_timbre_features(y, sr)
+            if timbre_features:
+                features.update(timbre_features)
+            
+            # 節奏特徵
+            rhythm_features = self.extract_rhythm_features(y, sr)
+            if rhythm_features:
+                features.update(rhythm_features)
+            
+            # 添加檔案名稱
+            features['filename'] = os.path.basename(audio_path)
+            
+            return features
+            
+        except Exception as e:
+            print(f"特徵提取錯誤 {audio_path}: {str(e)}")
+            return None
 
 class FeatureExtractor:
     def __init__(self):
