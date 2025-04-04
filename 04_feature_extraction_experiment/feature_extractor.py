@@ -413,11 +413,24 @@ class AudioFeatureExtractor:
             if y is None:
                 return None
                 
-            # 計算過零率
+            # 額外的預處理步驟
+            # 1. 應用中值濾波去除突發噪聲
+            y = scipy.signal.medfilt(y, kernel_size=3)
+            
+            # 2. 應用Savitzky-Golay濾波平滑信號
+            if len(y) > 11:  # 確保有足夠的點進行濾波
+                y = scipy.signal.savgol_filter(y, window_length=11, polyorder=3)
+            
+            # 3. 正規化音量
+            y = librosa.util.normalize(y)
+                
+            # 計算過零率，使用更穩定的參數
             zcr = librosa.feature.zero_crossing_rate(
                 y=y,
                 frame_length=adjusted_frame_length,
-                hop_length=adjusted_hop_length
+                hop_length=adjusted_hop_length,
+                center=True,  # 確保幀居中
+                pad_mode='reflect'  # 使用反射填充模式
             )
             
             # 計算統計值
@@ -425,24 +438,36 @@ class AudioFeatureExtractor:
             zcr_std = np.std(zcr)
             zcr_cv = zcr_std / zcr_mean if zcr_mean != 0 else float('inf')
             
-            # 評估過零率特徵
-            zcr_range_valid = (zcr_mean >= 0.034) and (zcr_mean <= 0.491)
-            zcr_stability = zcr_cv <= 0.4  # 變異係數 ≤ 0.4
+            # 計算局部穩定性（使用滑動窗口）
+            window_size = min(10, zcr.shape[1])
+            if window_size > 1:
+                local_stability = np.mean([np.std(zcr[:, i:i+window_size]) for i in range(0, zcr.shape[1]-window_size+1)])
+            else:
+                local_stability = zcr_std
             
-            # 添加過零率質量評分
+            # 評估過零率特徵，使用更嚴格的標準
+            zcr_range_valid = (zcr_mean >= 0.034) and (zcr_mean <= 0.491)
+            zcr_stability = zcr_cv <= 0.35  # 降低變異係數閾值，提高穩定性要求
+            zcr_local_stable = local_stability <= 0.1  # 新增局部穩定性評估
+            
+            # 添加過零率質量評分，考慮更多因素
             zcr_quality_score = 1.0
             if not zcr_range_valid:
-                zcr_quality_score -= 0.5
+                zcr_quality_score -= 0.4
             if not zcr_stability:
-                zcr_quality_score -= 0.5
+                zcr_quality_score -= 0.3
+            if not zcr_local_stable:
+                zcr_quality_score -= 0.3
             zcr_quality_score = max(0.0, zcr_quality_score)
             
             return {
                 'zcr_mean': zcr_mean,
                 'zcr_std': zcr_std,
                 'zcr_cv': zcr_cv,
+                'zcr_local_stability': local_stability,
                 'zcr_range_valid': zcr_range_valid,
                 'zcr_stability': zcr_stability,
+                'zcr_local_stable': zcr_local_stable,
                 'zcr_quality_score': zcr_quality_score
             }
         except Exception as e:
@@ -743,7 +768,7 @@ class FeatureExtractor:
             'mfcc': ['mfcc_mean', 'mfcc_std', 'mfcc_cv', 'mfcc_stability', 'mfcc_range_valid', 'mfcc_std_valid'],
             'f0': ['f0_missing_rate', 'f0_rmse', 'f0_stability', 'f0_accuracy', 'f0_rmse_valid'],
             'energy': ['energy_mean', 'energy_std', 'energy_cv', 'energy_snr', 'energy_range_valid', 'energy_stability', 'energy_snr_valid'],
-            'zcr': ['zcr_mean', 'zcr_std', 'zcr_cv', 'zcr_range_valid', 'zcr_stability']
+            'zcr': ['zcr_mean', 'zcr_std', 'zcr_cv', 'zcr_local_stability', 'zcr_range_valid', 'zcr_stability', 'zcr_local_stable']
         }
         
         for group_name, features in feature_groups.items():
