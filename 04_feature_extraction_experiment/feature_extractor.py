@@ -43,7 +43,7 @@ class AudioFeatureExtractor:
             print(f"音頻預處理錯誤: {str(e)}")
             return None
             
-    def extract_mfcc(self, audio_path: str, n_mfcc: int = 13) -> np.ndarray:
+    def extract_mfcc(self, audio_path: str, n_mfcc: int = 13) -> dict:
         """提取 MFCC 特徵
         
         Args:
@@ -51,7 +51,7 @@ class AudioFeatureExtractor:
             n_mfcc: MFCC 係數數量
             
         Returns:
-            MFCC 特徵矩陣
+            MFCC 特徵字典
         """
         try:
             # 讀取音頻文件
@@ -97,11 +97,39 @@ class AudioFeatureExtractor:
             features = (features - np.mean(features, axis=1, keepdims=True)) / \
                       (np.std(features, axis=1, keepdims=True) + 1e-8)
             
-            return features
+            # 計算統計特徵
+            mfcc_mean = np.mean(features)
+            mfcc_std = np.std(features)
+            mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
+            
+            # 評估特徵穩定性
+            mfcc_stability = mfcc_cv < 3.0
+            mfcc_range_valid = -100 < mfcc_mean < 100
+            mfcc_std_valid = 0 <= mfcc_std < 50
+            
+            # 計算特徵質量評分
+            mfcc_quality_score = 1.0
+            if not mfcc_stability:
+                mfcc_quality_score -= 0.3
+            if not mfcc_range_valid:
+                mfcc_quality_score -= 0.3
+            if not mfcc_std_valid:
+                mfcc_quality_score -= 0.3
+            mfcc_quality_score = max(0.0, mfcc_quality_score)
+            
+            return {
+                'mfcc_mean': mfcc_mean,
+                'mfcc_std': mfcc_std,
+                'mfcc_cv': mfcc_cv,
+                'mfcc_stability': mfcc_stability,
+                'mfcc_range_valid': mfcc_range_valid,
+                'mfcc_std_valid': mfcc_std_valid,
+                'mfcc_quality_score': mfcc_quality_score
+            }
             
         except Exception as e:
             print(f"提取 MFCC 特徵時發生錯誤: {str(e)}")
-            return np.array([])
+            return None
             
     def extract_f0(self, audio_path):
         """提取基頻F0特徵"""
@@ -498,8 +526,7 @@ class FeatureExtractor:
         df = pd.DataFrame(features_list)
         
         # 確保所有必要的列都存在
-        required_columns = ['filename', 'category', 'mfcc_mean', 'mfcc_std', 'mfcc_cv', 
-                           'mfcc_stability', 'mfcc_range_valid', 'mfcc_std_valid']
+        required_columns = ['filename', 'category']
         for col in required_columns:
             if col not in df.columns:
                 df[col] = None
@@ -508,14 +535,18 @@ class FeatureExtractor:
         stats = {}
         for category in df['category'].unique():
             category_df = df[df['category'] == category]
-            stats[category] = {
-                'mfcc_mean_range': f"{category_df['mfcc_mean'].min():.3f} to {category_df['mfcc_mean'].max():.3f}",
-                'mfcc_std_range': f"{category_df['mfcc_std'].min():.3f} to {category_df['mfcc_std'].max():.3f}",
-                'mfcc_cv_range': f"{category_df['mfcc_cv'].min():.3f} to {category_df['mfcc_cv'].max():.3f}",
-                'stability_rate': f"{(category_df['mfcc_stability'].sum() / len(category_df) * 100):.1f}%",
-                'range_valid_rate': f"{(category_df['mfcc_range_valid'].sum() / len(category_df) * 100):.1f}%",
-                'std_valid_rate': f"{(category_df['mfcc_std_valid'].sum() / len(category_df) * 100):.1f}%"
-            }
+            
+            # 計算每個特徵的統計信息
+            feature_stats = {}
+            for col in df.columns:
+                if col not in ['filename', 'category']:
+                    if col in category_df.columns:
+                        feature_stats[f'{col}_mean'] = category_df[col].mean()
+                        feature_stats[f'{col}_std'] = category_df[col].std()
+                        feature_stats[f'{col}_min'] = category_df[col].min()
+                        feature_stats[f'{col}_max'] = category_df[col].max()
+            
+            stats[category] = feature_stats
             
         return stats
         
