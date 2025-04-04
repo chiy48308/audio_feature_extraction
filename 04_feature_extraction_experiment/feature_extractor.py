@@ -22,6 +22,23 @@ class AudioFeatureExtractor:
         self.frame_length = 2048  # 幀長度
         self.hop_length = 512  # 跳躍長度
         
+    def _get_empty_f0_features(self) -> Dict[str, Any]:
+        """返回空的F0特徵字典，用於處理錯誤情況
+        
+        Returns:
+            Dict[str, Any]: 包含所有F0相關特徵的字典，所有值都設置為無效或默認值
+        """
+        return {
+            'f0_missing_rate': 1.0,  # 100%缺失
+            'f0_rmse': float('inf'),  # 無限大的RMSE
+            'f0_stability': float('inf'),  # 無限大的不穩定性
+            'f0_accuracy': 0.0,  # 0%準確度
+            'f0_rmse_valid': False,  # RMSE無效
+            'f0_stability_valid': False,  # 穩定性無效
+            'f0_quality': 0.0,  # 0%質量
+            'f0_quality_score': 0.0  # 0分質量評分
+        }
+        
     def load_audio(self, audio_path, sr=None):
         """
         讀取音頻文件並返回音頻數據和採樣率。
