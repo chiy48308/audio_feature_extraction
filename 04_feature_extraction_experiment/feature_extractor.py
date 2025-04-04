@@ -235,7 +235,7 @@ class AudioFeatureExtractor:
                 fmin=librosa.note_to_hz('C1'),  # 最低頻率
                 fmax=librosa.note_to_hz('C8'),  # 最高頻率
                 sr=sr,
-                frame_length=2048,  # 增加幀長以提高穩定性
+                frame_length=2937,  # 增加幀長到2937以適應最低頻率
                 hop_length=512,
                 fill_na=None
             )
