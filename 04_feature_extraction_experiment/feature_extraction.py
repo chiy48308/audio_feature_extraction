@@ -1,141 +1,265 @@
+"""
+特徵提取模組 - 最新版本 (v2.0.0)
+包含改進的F0提取和特徵評估功能
+"""
+
+import os
 import numpy as np
 import librosa
+import soundfile as sf
+import noisereduce as nr
+import webrtcvad
+import pyloudnorm as pyln
+from scipy import signal
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Dict, Tuple, List
+from datetime import datetime
 import logging
 from pathlib import Path
 import pandas as pd
+import yaml
+import warnings
+warnings.filterwarnings('ignore')
 
 # 設置日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FeatureExtractor:
-    def __init__(self, output_dir: str = "features"):
-        """初始化特徵提取器
+    """特徵提取器 - 最新版本"""
+    
+    def __init__(self, config_path='config/experiment_config.yaml'):
+        """初始化特徵提取器"""
+        self.config = self._load_config(config_path)
+        self.sample_rate = self.config['audio']['sample_rate']
+        self.vad = webrtcvad.Vad(self.config['vad']['aggressiveness'])
+        self.frame_duration = self.config['vad']['frame_duration']
+        self.min_speech_duration = self.config['vad']['min_speech_duration']
+        self.max_speech_duration = self.config['vad']['max_speech_duration']
+        self.min_silence_duration = self.config['vad']['min_silence_duration']
+        self.reference_level = self.config['volume']['reference_level']
+        self.version = "2.0.0"  # 添加版本標記
         
-        Args:
-            output_dir: 特徵輸出目錄
-        """
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+    def _load_config(self, config_path):
+        """載入配置文件"""
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f)
+            
+    def extract_features(self, audio_path):
+        """提取所有特徵"""
+        # 載入音頻
+        audio, _ = librosa.load(audio_path, sr=self.sample_rate)
         
-    def load_audio(self, audio_path: str) -> Tuple[np.ndarray, int]:
-        """載入音頻文件
+        # 預處理
+        audio = self._preprocess_audio(audio)
         
-        Args:
-            audio_path: 音頻文件路徑
-            
-        Returns:
-            (音頻數據, 採樣率)
-        """
-        try:
-            y, sr = librosa.load(audio_path, sr=None)
-            return y, sr
-        except Exception as e:
-            logger.error(f"音頻載入失敗: {str(e)}")
-            raise
-
-    def extract_features(self, audio_path: str) -> Dict[str, np.ndarray]:
-        """提取音頻特徵
+        # 提取特徵
+        features = {
+            'mfcc': self.extract_mfcc(audio),
+            'f0': self.extract_f0(audio),
+            'energy': self.extract_energy(audio),
+            'zcr': self.extract_zcr(audio)
+        }
         
-        Args:
-            audio_path: 音頻文件路徑
+        # 評估特徵質量
+        quality_metrics = self.evaluate_features(features)
+        
+        return features, quality_metrics
+        
+    def _preprocess_audio(self, audio):
+        """音頻預處理"""
+        # 降噪
+        audio = nr.reduce_noise(
+            y=audio,
+            sr=self.sample_rate,
+            stationary=True,
+            prop_decrease=0.95
+        )
+        
+        # VAD
+        audio = self._apply_vad(audio)
+        
+        # 音量正規化
+        audio = self._normalize_volume(audio)
+        
+        return audio
+        
+    def _apply_vad(self, audio):
+        """應用VAD"""
+        frame_size = int(self.frame_duration * self.sample_rate / 1000)
+        frames = librosa.util.frame(audio, frame_length=frame_size, hop_length=frame_size)
+        
+        speech_frames = []
+        for frame in frames.T:
+            is_speech = self.vad.is_speech(frame.astype(np.int16).tobytes(), self.sample_rate)
+            speech_frames.extend([1 if is_speech else 0] * frame_size)
             
-        Returns:
-            特徵字典，包含以下特徵：
-            - mfcc: MFCC特徵 (n_frames, 13)
-            - f0: 基頻特徵 (n_frames, 1)
-            - energy: 能量特徵 (n_frames, 1)
-            - zcr: 過零率特徵 (n_frames, 1)
-        """
-        try:
-            # 載入音頻
-            y, sr = self.load_audio(audio_path)
-            
-            # 計算幀長和幀移（以秒為單位）
-            frame_length = 0.025  # 25ms
-            frame_shift = 0.010   # 10ms
-            
-            # 將秒轉換為採樣點數
-            frame_length_samples = int(frame_length * sr)
-            frame_shift_samples = int(frame_shift * sr)
-            
-            # 確保幀長度足夠長以進行基頻提取
-            min_frame_length = int(491 * sr / 16000)  # 根據16kHz採樣率調整幀長度
-            frame_length_samples = max(frame_length_samples, min_frame_length)
-            
-            # 計算總幀數
-            n_frames = 1 + (len(y) - frame_length_samples) // frame_shift_samples
-            
-            # 初始化特徵數組
-            mfcc_features = np.zeros((n_frames, 13))
-            f0_features = np.zeros((n_frames, 1))
-            energy_features = np.zeros((n_frames, 1))
-            zcr_features = np.zeros((n_frames, 1))
-            
-            # 逐幀提取特徵
-            for i in range(n_frames):
-                # 提取當前幀
-                start = i * frame_shift_samples
-                end = start + frame_length_samples
-                frame = y[start:end]
-                
-                # 提取MFCC
-                mfcc = librosa.feature.mfcc(
-                    y=frame,
-                    sr=sr,
-                    n_mfcc=13,
-                    n_fft=frame_length_samples,
-                    hop_length=frame_length_samples
-                )
-                mfcc_features[i] = mfcc[:, 0]
-                
-                # 提取F0（使用更高的最小頻率和更長的幀長度）
-                f0, voiced_flag, voiced_probs = librosa.pyin(
-                    frame,
-                    fmin=80.0,  # 提高最小頻率
-                    fmax=librosa.note_to_hz('C7'),
-                    sr=sr,
-                    frame_length=frame_length_samples,
-                    hop_length=frame_length_samples
-                )
-                f0_features[i] = f0[0] if not np.isnan(f0[0]) else 0
-                
-                # 提取能量（使用預加重以增強高頻）
-                preemph_frame = librosa.effects.preemphasis(frame)
-                energy = librosa.feature.rms(
-                    y=preemph_frame,
-                    frame_length=frame_length_samples,
-                    hop_length=frame_length_samples
-                )
-                energy_features[i] = energy[0, 0]
-                
-                # 提取過零率（使用預加重以增強高頻）
-                zcr = librosa.feature.zero_crossing_rate(
-                    preemph_frame,
-                    frame_length=frame_length_samples,
-                    hop_length=frame_length_samples
-                )
-                zcr_features[i] = zcr[0, 0]
-            
-            # 正規化特徵
-            mfcc_features = (mfcc_features - np.mean(mfcc_features, axis=0)) / (np.std(mfcc_features, axis=0) + 1e-8)
-            f0_features = (f0_features - np.mean(f0_features)) / (np.std(f0_features) + 1e-8)
-            energy_features = (energy_features - np.mean(energy_features)) / (np.std(energy_features) + 1e-8)
-            zcr_features = (zcr_features - np.mean(zcr_features)) / (np.std(zcr_features) + 1e-8)
-            
-            return {
-                'mfcc': mfcc_features,
-                'f0': f0_features,
-                'energy': energy_features,
-                'zcr': zcr_features
-            }
-            
-        except Exception as e:
-            logger.error(f"特徵提取失敗: {str(e)}")
-            raise
+        speech_frames = np.array(speech_frames[:len(audio)])
+        return audio * speech_frames
+        
+    def _normalize_volume(self, audio):
+        """音量正規化"""
+        meter = pyln.Meter(self.sample_rate)
+        loudness = meter.integrated_loudness(audio)
+        return pyln.normalize.loudness(audio, loudness, self.reference_level)
+        
+    def extract_mfcc(self, audio):
+        """提取MFCC特徵"""
+        mfcc = librosa.feature.mfcc(
+            y=audio,
+            sr=self.sample_rate,
+            n_mfcc=13,
+            n_fft=2048,
+            hop_length=512
+        )
+        return mfcc
+        
+    def extract_f0(self, audio):
+        """提取F0特徵（改進版本）"""
+        # 預處理
+        audio = librosa.effects.preemphasis(audio)
+        
+        # 使用改進的PYIN算法
+        f0, voiced_flag, voiced_probs = librosa.pyin(
+            audio,
+            fmin=librosa.note_to_hz('C2'),
+            fmax=librosa.note_to_hz('C7'),
+            sr=self.sample_rate,
+            frame_length=2048,
+            hop_length=512,
+            center=True,
+            pad_mode='reflect'
+        )
+        
+        # 後處理
+        f0 = self._post_process_f0(f0, voiced_flag)
+        
+        return f0
+        
+    def _post_process_f0(self, f0, voiced_flag):
+        """F0後處理"""
+        # 中值濾波
+        f0 = signal.medfilt(f0, kernel_size=5)
+        
+        # Savitzky-Golay濾波
+        f0 = signal.savgol_filter(f0, window_length=5, polyorder=2)
+        
+        # 只保留有聲音的部分
+        f0[~voiced_flag] = 0
+        
+        return f0
+        
+    def extract_energy(self, audio):
+        """提取能量特徵"""
+        energy = librosa.feature.rms(
+            y=audio,
+            frame_length=2048,
+            hop_length=512
+        )
+        return energy
+        
+    def extract_zcr(self, audio):
+        """提取過零率特徵"""
+        zcr = librosa.feature.zero_crossing_rate(
+            y=audio,
+            frame_length=2048,
+            hop_length=512
+        )
+        return zcr
+        
+    def evaluate_features(self, features):
+        """評估特徵質量"""
+        metrics = {}
+        
+        # MFCC評估
+        metrics['mfcc_snr'] = self._calculate_snr(features['mfcc'])
+        metrics['mfcc_stability'] = self._calculate_stability(features['mfcc'])
+        
+        # F0評估
+        metrics['f0_continuity'] = self._calculate_f0_continuity(features['f0'])
+        metrics['f0_range'] = self._calculate_f0_range(features['f0'])
+        
+        # 能量評估
+        metrics['energy_snr'] = self._calculate_snr(features['energy'])
+        metrics['energy_stability'] = self._calculate_stability(features['energy'])
+        
+        # ZCR評估
+        metrics['zcr_snr'] = self._calculate_snr(features['zcr'])
+        metrics['zcr_stability'] = self._calculate_stability(features['zcr'])
+        
+        return metrics
+        
+    def _calculate_snr(self, feature):
+        """計算信噪比"""
+        signal = np.mean(feature, axis=1)
+        noise = feature - signal[:, np.newaxis]
+        return 10 * np.log10(np.mean(signal**2) / np.mean(noise**2))
+        
+    def _calculate_stability(self, feature):
+        """計算穩定性"""
+        return 1 - np.std(feature) / np.mean(np.abs(feature))
+        
+    def _calculate_f0_continuity(self, f0):
+        """計算F0連續性"""
+        voiced = f0 > 0
+        if np.sum(voiced) < 2:
+            return 0
+        return 1 - np.mean(np.abs(np.diff(f0[voiced])))
+        
+    def _calculate_f0_range(self, f0):
+        """計算F0範圍"""
+        voiced = f0 > 0
+        if np.sum(voiced) < 2:
+            return 0
+        return np.log2(np.max(f0[voiced]) / np.min(f0[voiced]))
+        
+    def save_features(self, features, audio_path):
+        """保存特徵"""
+        # 創建保存目錄
+        os.makedirs('features', exist_ok=True)
+        
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        base_name = os.path.splitext(os.path.basename(audio_path))[0]
+        save_path = f'features/{timestamp}_{base_name}_processed_features.npz'
+        
+        # 保存特徵
+        np.savez(save_path, **features)
+        logger.info(f'特徵提取結果已保存至: {save_path}')
+        
+        # 保存可視化
+        self._save_visualization(features, timestamp, base_name)
+        
+    def _save_visualization(self, features, timestamp, base_name):
+        """保存特徵可視化"""
+        plt.figure(figsize=(15, 10))
+        
+        # MFCC
+        plt.subplot(4, 1, 1)
+        sns.heatmap(features['mfcc'], cmap='viridis')
+        plt.title('MFCC特徵')
+        
+        # F0
+        plt.subplot(4, 1, 2)
+        plt.plot(features['f0'])
+        plt.title('F0特徵')
+        
+        # 能量
+        plt.subplot(4, 1, 3)
+        plt.plot(features['energy'].T)
+        plt.title('能量特徵')
+        
+        # ZCR
+        plt.subplot(4, 1, 4)
+        plt.plot(features['zcr'].T)
+        plt.title('過零率特徵')
+        
+        plt.tight_layout()
+        save_path = f'features/{timestamp}_{base_name}_processed_visualization.png'
+        plt.savefig(save_path)
+        logger.info(f'特徵可視化結果已保存至: {save_path}')
+        plt.close()
 
     def visualize_features(self, features: Dict[str, np.ndarray], save_path: str = None):
         """可視化特徵
@@ -222,40 +346,6 @@ class FeatureExtractor:
         except Exception as e:
             logger.error(f"特徵質量評估失敗: {str(e)}")
             raise
-
-    def _calculate_snr(self, feature: np.ndarray) -> float:
-        """計算信噪比
-        
-        Args:
-            feature: 特徵數組
-            
-        Returns:
-            信噪比
-        """
-        signal = np.mean(feature, axis=0)
-        noise = feature - signal
-        signal_power = np.sum(signal**2)
-        noise_power = np.sum(noise**2)
-        
-        if noise_power == 0:
-            return float('inf')
-        elif signal_power == 0:
-            return float('-inf')
-        else:
-            return 10 * np.log10(signal_power / (noise_power + 1e-8))
-
-    def _calculate_stability(self, feature: np.ndarray) -> float:
-        """計算特徵穩定性
-        
-        Args:
-            feature: 特徵數組
-            
-        Returns:
-            穩定性指標
-        """
-        diff = np.diff(feature, axis=0)
-        stability = 1 / (1 + np.mean(np.abs(diff)))
-        return stability
 
     def _calculate_continuity(self, feature: np.ndarray) -> float:
         """計算特徵連續性

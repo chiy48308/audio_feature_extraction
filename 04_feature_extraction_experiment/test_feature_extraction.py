@@ -1,40 +1,38 @@
+"""
+特徵提取測試模組 - 最新版本 (v2.0.0)
+"""
+
 import os
-from pathlib import Path
-from feature_extraction import FeatureExtractor
+import numpy as np
 import logging
+from feature_extraction import FeatureExtractor
 
 # 設置日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def main():
+def test_feature_extraction():
+    """測試特徵提取"""
+    logger.info("開始提取特徵...")
+    
     # 初始化特徵提取器
-    extractor = FeatureExtractor(output_dir="features")
+    extractor = FeatureExtractor()
     
-    # 測試音頻文件路徑
-    audio_path = "processed_audio/session_20250224_165816_Lesson01_Pete_Student01_utterance01_processed.wav"
+    # 測試音頻文件
+    audio_path = "test_audio/test.wav"
     
-    try:
-        # 提取特徵
-        logger.info("開始提取特徵...")
-        features = extractor.extract_features(audio_path)
+    # 提取特徵
+    features, quality_metrics = extractor.extract_features(audio_path)
+    
+    # 保存特徵
+    extractor.save_features(features, audio_path)
+    
+    # 輸出評估結果
+    logger.info("特徵質量評估結果:")
+    for metric, value in quality_metrics.items():
+        logger.info(f"{metric}: {value:.4f}")
         
-        # 評估特徵質量
-        logger.info("評估特徵質量...")
-        quality_metrics = extractor.evaluate_feature_quality(features)
-        
-        # 保存結果
-        logger.info("保存結果...")
-        extractor.save_results(features, quality_metrics, audio_path)
-        
-        # 顯示質量評估結果
-        logger.info("特徵質量評估結果:")
-        for metric, value in quality_metrics.items():
-            logger.info(f"{metric}: {value:.4f}")
-            
-    except Exception as e:
-        logger.error(f"測試失敗: {str(e)}")
-        raise
+    return features, quality_metrics
 
 if __name__ == "__main__":
-    main() 
+    test_feature_extraction() 
