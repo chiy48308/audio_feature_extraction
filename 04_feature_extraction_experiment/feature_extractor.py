@@ -27,20 +27,13 @@ class AudioFeatureExtractor:
             y = librosa.util.normalize(y)
             
             # 降噪
-            y = librosa.effects.preemphasis(y, coef=0.99)
+            y = librosa.effects.preemphasis(y, coef=0.97)
             
             # 高通濾波（調整截止頻率）
             nyquist = self.sr / 2
-            cutoff = 600 / nyquist
-            b, a = scipy.signal.butter(8, cutoff, btype='high')
+            cutoff = 300 / nyquist
+            b, a = scipy.signal.butter(4, cutoff, btype='high')
             y = scipy.signal.filtfilt(b, a, y)
-            
-            # 分段處理
-            frame_length = 4096
-            hop_length = 1024
-            frames = librosa.util.frame(y, frame_length=frame_length, hop_length=hop_length)
-            frames = librosa.util.normalize(frames, axis=0)
-            y = librosa.util.fix_length(frames.mean(axis=1), size=len(y))
             
             return y
         except Exception as e:
@@ -63,15 +56,15 @@ class AudioFeatureExtractor:
                 y=y, 
                 sr=self.sr,
                 n_mfcc=13,
-                n_fft=16384,
-                hop_length=16384,
-                win_length=16384,
+                n_fft=2048,
+                hop_length=512,
+                win_length=2048,
                 window='hann',
-                n_mels=192
+                n_mels=128
             )
             
-            # 使用更大的kernel進行平滑
-            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(7, 7))
+            # 使用中值濾波進行平滑
+            mfcc = scipy.signal.medfilt(mfcc, kernel_size=(3, 3))
             
             # 計算統計特徵
             mfcc_mean = np.mean(mfcc)
@@ -79,7 +72,7 @@ class AudioFeatureExtractor:
             mfcc_cv = np.abs(mfcc_std / mfcc_mean) if mfcc_mean != 0 else float('inf')
             
             # 評估特徵穩定性
-            mfcc_stability = mfcc_cv < 2.5 if mfcc_mean != 0 else False
+            mfcc_stability = mfcc_cv < 2.8 if mfcc_mean != 0 else False
             mfcc_range_valid = -100 < mfcc_mean < 100
             mfcc_std_valid = 0 <= mfcc_std < 50
             
