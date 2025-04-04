@@ -20,12 +20,9 @@ class AudioFeatureExtractor:
         self.frame_length = 2048  # 減小幀長度以提高時間分辨率
         self.hop_length = 512  # 相應調整跳躍長度
         
-    def preprocess_audio(self, audio_path):
+    def preprocess_audio(self, y):
         """音頻預處理：降噪和正規化"""
         try:
-            # 載入音頻
-            y, sr = librosa.load(audio_path, sr=self.sr)
-            
             # 正規化
             y = librosa.util.normalize(y)
             
@@ -33,7 +30,7 @@ class AudioFeatureExtractor:
             y = librosa.effects.preemphasis(y, coef=0.99)
             
             # 高通濾波（調整截止頻率）
-            nyquist = sr / 2
+            nyquist = self.sr / 2
             cutoff = 600 / nyquist
             b, a = scipy.signal.butter(8, cutoff, btype='high')
             y = scipy.signal.filtfilt(b, a, y)
@@ -47,7 +44,7 @@ class AudioFeatureExtractor:
             
             return y
         except Exception as e:
-            print(f"音頻預處理錯誤 {audio_path}: {str(e)}")
+            print(f"音頻預處理錯誤 {y}: {str(e)}")
             return None
             
     def extract_mfcc(self, audio_path):
@@ -58,11 +55,13 @@ class AudioFeatureExtractor:
             
             # 預處理音頻
             y = self.preprocess_audio(y)
+            if y is None:
+                return None
             
             # 提取MFCC特徵
             mfcc = librosa.feature.mfcc(
                 y=y, 
-                sr=sr,
+                sr=self.sr,
                 n_mfcc=13,
                 n_fft=16384,
                 hop_length=16384,
