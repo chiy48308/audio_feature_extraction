@@ -309,20 +309,18 @@ Sakoe-Chiba帶寬：{self.radius}
             student_features = student_data['mfcc']
             
             # 檢查並修正MFCC特徵維度
-            if teacher_features.shape[1] == 13 and teacher_features.shape[0] != 13:
-                teacher_features = teacher_features.T  # 轉置使其變為(frames, 13)
-            elif teacher_features.shape[0] == 13:
-                teacher_features = teacher_features.T  # 轉置使其變為(frames, 13)
-            
-            if student_features.shape[1] == 13 and student_features.shape[0] != 13:
-                student_features = student_features.T  # 轉置使其變為(frames, 13)
-            elif student_features.shape[0] == 13:
-                student_features = student_features.T  # 轉置使其變為(frames, 13)
-            
-            # 檢查最終維度是否正確
-            if teacher_features.shape[1] != 13:
+            if teacher_features.shape[0] == 39:
+                teacher_features = teacher_features.T  # 轉置使其變為(frames, 39)
+            elif teacher_features.shape[1] == 39:
+                pass  # 已經是正確的形狀(frames, 39)
+            else:
                 raise ValueError(f"教師特徵維度不正確: {teacher_features.shape}")
-            if student_features.shape[1] != 13:
+            
+            if student_features.shape[0] == 39:
+                student_features = student_features.T  # 轉置使其變為(frames, 39)
+            elif student_features.shape[1] == 39:
+                pass  # 已經是正確的形狀(frames, 39)
+            else:
                 raise ValueError(f"學生特徵維度不正確: {student_features.shape}")
             
             logger.debug(f"教師特徵形狀: {teacher_features.shape}")
