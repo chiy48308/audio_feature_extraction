@@ -305,23 +305,25 @@ Sakoe-Chiba帶寬：{self.radius}
             student_data = np.load(student_file)
             
             # 獲取特徵數據 - 只使用MFCC特徵
-            teacher_features = teacher_data['mfcc']
-            student_features = student_data['mfcc']
+            teacher_features = teacher_data['mfcc']  # 先不轉置
+            student_features = student_data['mfcc']  # 先不轉置
             
-            # 檢查並修正MFCC特徵維度
-            if teacher_features.shape[0] == 39:
-                teacher_features = teacher_features.T  # 轉置使其變為(frames, 39)
-            elif teacher_features.shape[1] == 39:
-                pass  # 已經是正確的形狀(frames, 39)
-            else:
-                raise ValueError(f"教師特徵維度不正確: {teacher_features.shape}")
-            
-            if student_features.shape[0] == 39:
-                student_features = student_features.T  # 轉置使其變為(frames, 39)
-            elif student_features.shape[1] == 39:
-                pass  # 已經是正確的形狀(frames, 39)
-            else:
-                raise ValueError(f"學生特徵維度不正確: {student_features.shape}")
+            # 檢查並修正特徵維度
+            if teacher_features.shape[1] != 39:  # 如果第二維不是39
+                if teacher_features.shape[0] == 39:  # 如果第一維是39
+                    teacher_features = teacher_features.T  # 轉置
+                elif teacher_features.shape[1] == 13:  # 如果是13維MFCC
+                    teacher_features = teacher_features.T  # 轉置
+                else:
+                    raise ValueError(f"教師特徵維度不正確: {teacher_features.shape}")
+                
+            if student_features.shape[1] != 39:  # 如果第二維不是39
+                if student_features.shape[0] == 39:  # 如果第一維是39
+                    student_features = student_features.T  # 轉置
+                elif student_features.shape[1] == 13:  # 如果是13維MFCC
+                    student_features = student_features.T  # 轉置
+                else:
+                    raise ValueError(f"學生特徵維度不正確: {student_features.shape}")
             
             logger.debug(f"教師特徵形狀: {teacher_features.shape}")
             logger.debug(f"學生特徵形狀: {student_features.shape}")
@@ -357,17 +359,17 @@ Sakoe-Chiba帶寬：{self.radius}
                 "teacher_length": len(teacher_features),
                 "student_length": len(student_features),
                 "mean_time_difference": float(mean_difference),
-                "std_time_difference": float(std_difference)
+                "std_time_difference": float(std_difference),
+                "path": [[int(i), int(j)] for i, j in path]  # 保存完整的對齊路徑
             }
             
-            # 記錄處理結果
             logger.info(f"處理完成:\nDTW距離: {distance:.2f}\n處理時間: {processing_time:.2f}秒\n平均時間差異: {mean_difference:.3f}秒\n時間差異標準差: {std_difference:.3f}秒")
             
             return result
             
         except Exception as e:
             logger.error(f"處理文件對時出錯: {str(e)}")
-            logger.error(f"Traceback:\n{traceback.format_exc()}")
+            logger.error("Traceback:", exc_info=True)
             return None
 
 def process_all_files(feature_dir):
