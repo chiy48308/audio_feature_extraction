@@ -282,6 +282,17 @@ Sakoe-Chiba帶寬：{self.radius}
         correct_alignments = np.sum(np.abs(time_diffs) < 250)  # 250ms內視為正確對應
         correspondence_rate = (correct_alignments / len(path)) * 100
         
+        # 計算分段統計
+        segments = np.array_split(time_diffs, 10)  # 將路徑分成10段
+        segment_stats = []
+        for i, segment in enumerate(segments):
+            segment_stats.append({
+                'segment_id': i + 1,
+                'mean_diff': float(np.mean(segment)),
+                'std_diff': float(np.std(segment)),
+                'max_diff': float(np.max(np.abs(segment)))
+            })
+        
         # 評估結果
         evaluation = {
             'rmse': float(rmse),
@@ -291,14 +302,47 @@ Sakoe-Chiba帶寬：{self.radius}
             'late_cuts': int(late_cuts),
             'alignment_consistency': bool(alignment_consistency),
             'path_length': len(path),
+            'segment_analysis': segment_stats,
             'meets_standards': {
                 'rmse_standard': rmse <= 200,
                 'consistency_standard': alignment_consistency,
                 'correspondence_standard': correspondence_rate >= 95
-            }
+            },
+            'improvement_suggestions': []
         }
         
+        # 生成改進建議
+        if rmse > 200:
+            evaluation['improvement_suggestions'].append({
+                'aspect': 'RMSE',
+                'current': float(rmse),
+                'target': 200,
+                'suggestion': '考慮增加動態窗口大小和使用局部約束來改善對齊精度'
+            })
+        
+        if not alignment_consistency:
+            evaluation['improvement_suggestions'].append({
+                'aspect': '一致性',
+                'current': {
+                    'early_cuts': int(early_cuts),
+                    'late_cuts': int(late_cuts)
+                },
+                'target': 'no_cuts',
+                'suggestion': '建議添加平滑處理和異常點檢測來提高一致性'
+            })
+        
+        if correspondence_rate < 95:
+            evaluation['improvement_suggestions'].append({
+                'aspect': '對應率',
+                'current': float(correspondence_rate),
+                'target': 95,
+                'suggestion': '考慮使用特徵權重和多尺度DTW來提高對應準確率'
+            })
+        
         # 記錄評估結果
+        segment_analysis = '\n'.join(f'   段落 {stats["segment_id"]}: 平均偏差={stats["mean_diff"]:.1f}ms, 標準差={stats["std_diff"]:.1f}ms' for stats in segment_stats)
+        improvement_suggestions = '\n'.join(f'- {sugg["aspect"]}: 當前={sugg["current"]}, 目標={sugg["target"]}\n  {sugg["suggestion"]}' for sugg in evaluation['improvement_suggestions'])
+        
         logger.info(f"""
 對齊評估結果：
 1. RMSE: {rmse:.2f} ms {'✓' if rmse <= 200 else '✗'}
@@ -307,6 +351,12 @@ Sakoe-Chiba帶寬：{self.radius}
    過晚切點: {late_cuts} 個
    一致性: {'✓' if alignment_consistency else '✗'}
 3. 對應率: {correspondence_rate:.2f}% {'✓' if correspondence_rate >= 95 else '✗'}
+
+分段分析：
+{segment_analysis}
+
+改進建議：
+{improvement_suggestions}
 """)
         
         return evaluation
