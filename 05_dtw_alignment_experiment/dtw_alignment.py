@@ -311,19 +311,32 @@ Sakoe-Chiba帶寬：{self.radius}
             # 檢查並修正特徵維度
             def normalize_features(features, name):
                 """標準化特徵維度為(frames, 39)"""
+                logger.debug(f"原始{name}特徵形狀: {features.shape}")
+                
+                # 如果已經是正確的形狀(frames, 39)
                 if features.shape[1] == 39:
                     return features
-                elif features.shape[0] == 39:
+                
+                # 如果是(39, frames)需要轉置
+                if features.shape[0] == 39:
                     return features.T
-                elif features.shape[1] == 13:
-                    # 如果是13維MFCC,需要先轉置確保時間幀在第一維
+                
+                # 處理13維MFCC特徵
+                if 13 in features.shape:
+                    # 確保13維在第二維
                     if features.shape[0] == 13:
-                        features = features.T
+                        features = features.T  # 轉置為(frames, 13)
+                    
+                    # 現在features應該是(frames, 13)
+                    if features.shape[1] != 13:
+                        raise ValueError(f"{name}特徵維度不正確: {features.shape}, 無法轉換為(frames, 13)")
+                    
                     # 複製三次得到39維
                     features_39 = np.concatenate([features] * 3, axis=1)
+                    logger.debug(f"轉換後{name}特徵形狀: {features_39.shape}")
                     return features_39
-                else:
-                    raise ValueError(f"{name}特徵維度不正確: {features.shape}")
+                
+                raise ValueError(f"{name}特徵維度不正確: {features.shape}, 需要是(frames, 39)或可轉換的形式")
             
             teacher_features = normalize_features(teacher_features, "教師")
             student_features = normalize_features(student_features, "學生")
