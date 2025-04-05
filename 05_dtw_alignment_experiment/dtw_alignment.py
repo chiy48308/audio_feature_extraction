@@ -309,21 +309,24 @@ Sakoe-Chiba帶寬：{self.radius}
             student_features = student_data['mfcc']  # 先不轉置
             
             # 檢查並修正特徵維度
-            if teacher_features.shape[1] != 39:  # 如果第二維不是39
-                if teacher_features.shape[0] == 39:  # 如果第一維是39
-                    teacher_features = teacher_features.T  # 轉置
-                elif teacher_features.shape[1] == 13:  # 如果是13維MFCC
-                    teacher_features = teacher_features.T  # 轉置
+            def normalize_features(features, name):
+                """標準化特徵維度為(frames, 39)"""
+                if features.shape[1] == 39:
+                    return features
+                elif features.shape[0] == 39:
+                    return features.T
+                elif features.shape[1] == 13:
+                    # 如果是13維MFCC,需要先轉置確保時間幀在第一維
+                    if features.shape[0] == 13:
+                        features = features.T
+                    # 複製三次得到39維
+                    features_39 = np.concatenate([features] * 3, axis=1)
+                    return features_39
                 else:
-                    raise ValueError(f"教師特徵維度不正確: {teacher_features.shape}")
-                
-            if student_features.shape[1] != 39:  # 如果第二維不是39
-                if student_features.shape[0] == 39:  # 如果第一維是39
-                    student_features = student_features.T  # 轉置
-                elif student_features.shape[1] == 13:  # 如果是13維MFCC
-                    student_features = student_features.T  # 轉置
-                else:
-                    raise ValueError(f"學生特徵維度不正確: {student_features.shape}")
+                    raise ValueError(f"{name}特徵維度不正確: {features.shape}")
+            
+            teacher_features = normalize_features(teacher_features, "教師")
+            student_features = normalize_features(student_features, "學生")
             
             logger.debug(f"教師特徵形狀: {teacher_features.shape}")
             logger.debug(f"學生特徵形狀: {student_features.shape}")
@@ -360,7 +363,7 @@ Sakoe-Chiba帶寬：{self.radius}
                 "student_length": len(student_features),
                 "mean_time_difference": float(mean_difference),
                 "std_time_difference": float(std_difference),
-                "path": [[int(i), int(j)] for i, j in path]  # 保存完整的對齊路徑
+                "alignment_path": [[int(i), int(j)] for i, j in path]  # 使用alignment_path作為鍵名
             }
             
             logger.info(f"處理完成:\nDTW距離: {distance:.2f}\n處理時間: {processing_time:.2f}秒\n平均時間差異: {mean_difference:.3f}秒\n時間差異標準差: {std_difference:.3f}秒")
