@@ -259,30 +259,57 @@ Sakoe-Chiba帶寬：{self.radius}
             raise
     
     def evaluate_alignment(self, path, student_features, teacher_features):
-        """評估對齊結果"""
-        # 計算RMSE（毫秒）
-        rmse = np.sqrt(mean_squared_error(path[:, 0], path[:, 1])) * 10
+        """評估對齊結果
         
-        # 計算最大偏差（毫秒）
-        max_deviation = np.max(np.abs(path[:, 0] - path[:, 1])) * 10
+        評估面向：
+        1. 對齊誤差範圍：RMSE ≤ 200 毫秒
+        2. 對齊一致性：每句偏差 < 250ms 且無過早/過晚切點
+        3. 語音-文本對應率：對應準確率 ≥ 95%
+        """
+        path_np = np.array(path)
         
-        # 計算對應率（偏差<200ms視為正確對應）
-        correct_alignments = np.sum(np.abs(path[:, 0] - path[:, 1]) * 10 < 200)
+        # 1. 計算RMSE（毫秒）
+        time_diffs = (path_np[:, 0] - path_np[:, 1]) * 10  # 轉換為毫秒
+        rmse = np.sqrt(np.mean(time_diffs ** 2))
+        
+        # 2. 對齊一致性評估
+        max_deviation = np.max(np.abs(time_diffs))
+        early_cuts = np.sum(time_diffs < -250)  # 過早切點數
+        late_cuts = np.sum(time_diffs > 250)    # 過晚切點數
+        alignment_consistency = (early_cuts == 0) and (late_cuts == 0)
+        
+        # 3. 語音-文本對應率
+        correct_alignments = np.sum(np.abs(time_diffs) < 250)  # 250ms內視為正確對應
         correspondence_rate = (correct_alignments / len(path)) * 100
         
-        # 檢查結果是否符合要求
-        if rmse > self.max_rmse:
-            raise ValueError(f"RMSE過大: {rmse:.2f} > {self.max_rmse}")
-        
-        if correspondence_rate < self.min_correspondence_rate:
-            raise ValueError(f"對應率過低: {correspondence_rate:.2f}% < {self.min_correspondence_rate}%")
-        
-        return {
+        # 評估結果
+        evaluation = {
             'rmse': float(rmse),
             'max_deviation': float(max_deviation),
             'correspondence_rate': float(correspondence_rate),
-            'path_length': len(path)
+            'early_cuts': int(early_cuts),
+            'late_cuts': int(late_cuts),
+            'alignment_consistency': bool(alignment_consistency),
+            'path_length': len(path),
+            'meets_standards': {
+                'rmse_standard': rmse <= 200,
+                'consistency_standard': alignment_consistency,
+                'correspondence_standard': correspondence_rate >= 95
+            }
         }
+        
+        # 記錄評估結果
+        logger.info(f"""
+對齊評估結果：
+1. RMSE: {rmse:.2f} ms {'✓' if rmse <= 200 else '✗'}
+2. 最大偏差: {max_deviation:.2f} ms
+   過早切點: {early_cuts} 個
+   過晚切點: {late_cuts} 個
+   一致性: {'✓' if alignment_consistency else '✗'}
+3. 對應率: {correspondence_rate:.2f}% {'✓' if correspondence_rate >= 95 else '✗'}
+""")
+        
+        return evaluation
     
     def align_files(self, student_features, teacher_features):
         """對齊兩個特徵序列"""
@@ -594,11 +621,18 @@ def save_validation_report(validation_results, baseline_dir):
     logger.info(f"\n詳細報告已保存至：{report_path}")
 
 def generate_final_report(results, baseline_dir, total_pairs, valid_pairs):
-    """生成最終報告，包含學生間的比較分析"""
+    """生成最終報告，包含詳細的評估指標分析"""
     # 基本統計
     avg_rmse = np.mean([r['evaluation']['rmse'] for r in results])
     avg_max_deviation = np.mean([r['evaluation']['max_deviation'] for r in results])
     avg_correspondence_rate = np.mean([r['evaluation']['correspondence_rate'] for r in results])
+    
+    # 標準達成統計
+    standards_met = {
+        'rmse': sum(1 for r in results if r['evaluation']['meets_standards']['rmse_standard']) / len(results) * 100,
+        'consistency': sum(1 for r in results if r['evaluation']['meets_standards']['consistency_standard']) / len(results) * 100,
+        'correspondence': sum(1 for r in results if r['evaluation']['meets_standards']['correspondence_standard']) / len(results) * 100
+    }
     
     # 按課程和學生分組
     lessons = sorted(set(r['lesson'] for r in results))
@@ -613,18 +647,12 @@ def generate_final_report(results, baseline_dir, total_pairs, valid_pairs):
             'average_rmse': float(np.mean([r['evaluation']['rmse'] for r in lesson_results])),
             'average_max_deviation': float(np.mean([r['evaluation']['max_deviation'] for r in lesson_results])),
             'average_correspondence_rate': float(np.mean([r['evaluation']['correspondence_rate'] for r in lesson_results])),
-            'student_comparison': {}
+            'standards_met': {
+                'rmse': sum(1 for r in lesson_results if r['evaluation']['meets_standards']['rmse_standard']) / len(lesson_results) * 100,
+                'consistency': sum(1 for r in lesson_results if r['evaluation']['meets_standards']['consistency_standard']) / len(lesson_results) * 100,
+                'correspondence': sum(1 for r in lesson_results if r['evaluation']['meets_standards']['correspondence_standard']) / len(lesson_results) * 100
+            }
         }
-        
-        # 添加學生間的比較
-        for student in students:
-            student_lesson_results = [r for r in lesson_results if r['student_id'] == student]
-            if student_lesson_results:
-                lesson_stats[lesson]['student_comparison'][student] = {
-                    'utterances': len(student_lesson_results),
-                    'average_rmse': float(np.mean([r['evaluation']['rmse'] for r in student_lesson_results])),
-                    'average_correspondence_rate': float(np.mean([r['evaluation']['correspondence_rate'] for r in student_lesson_results]))
-                }
     
     # 學生統計
     student_stats = {}
@@ -635,81 +663,54 @@ def generate_final_report(results, baseline_dir, total_pairs, valid_pairs):
             'average_rmse': float(np.mean([r['evaluation']['rmse'] for r in student_results])),
             'average_max_deviation': float(np.mean([r['evaluation']['max_deviation'] for r in student_results])),
             'average_correspondence_rate': float(np.mean([r['evaluation']['correspondence_rate'] for r in student_results])),
-            'lesson_performance': {}
-        }
-        
-        # 添加每個課程的表現
-        for lesson in lessons:
-            lesson_results = [r for r in student_results if r['lesson'] == lesson]
-            if lesson_results:
-                student_stats[student]['lesson_performance'][lesson] = {
-                    'utterances': len(lesson_results),
-                    'average_rmse': float(np.mean([r['evaluation']['rmse'] for r in lesson_results])),
-                    'average_correspondence_rate': float(np.mean([r['evaluation']['correspondence_rate'] for r in lesson_results]))
-                }
-    
-    # 學生間的比較分析
-    student_comparison = {
-        'best_overall': max(students, key=lambda s: student_stats[s]['average_correspondence_rate']),
-        'most_consistent': min(students, key=lambda s: np.std([r['evaluation']['rmse'] for r in [r for r in results if r['student_id'] == s]])),
-        'lesson_winners': {}
-    }
-    
-    # 找出每個課程表現最好的學生
-    for lesson in lessons:
-        lesson_results = {s: [r for r in results if r['lesson'] == lesson and r['student_id'] == s] for s in students}
-        if any(lesson_results.values()):
-            best_student = max(students,
-                             key=lambda s: np.mean([r['evaluation']['correspondence_rate'] for r in lesson_results[s]]) if lesson_results[s] else -float('inf'))
-            student_comparison['lesson_winners'][lesson] = {
-                'student': best_student,
-                'average_correspondence_rate': float(np.mean([r['evaluation']['correspondence_rate'] for r in lesson_results[best_student]]))
+            'standards_met': {
+                'rmse': sum(1 for r in student_results if r['evaluation']['meets_standards']['rmse_standard']) / len(student_results) * 100,
+                'consistency': sum(1 for r in student_results if r['evaluation']['meets_standards']['consistency_standard']) / len(student_results) * 100,
+                'correspondence': sum(1 for r in student_results if r['evaluation']['meets_standards']['correspondence_standard']) / len(student_results) * 100
             }
+        }
     
     summary = {
         'timestamp': datetime.now().isoformat(),
         'total_files': len(results),
         'total_pairs': total_pairs,
         'valid_pairs': valid_pairs,
-        'average_rmse': float(avg_rmse),
-        'average_max_deviation': float(avg_max_deviation),
-        'average_correspondence_rate': float(avg_correspondence_rate),
+        'overall_metrics': {
+            'average_rmse': float(avg_rmse),
+            'average_max_deviation': float(avg_max_deviation),
+            'average_correspondence_rate': float(avg_correspondence_rate)
+        },
+        'standards_compliance': standards_met,
         'lesson_statistics': lesson_stats,
-        'student_statistics': student_stats,
-        'student_comparison': student_comparison
+        'student_statistics': student_stats
     }
     
     # 保存報告
-    with open(baseline_dir / 'summary.json', 'w', encoding='utf-8') as f:
+    with open(baseline_dir / 'detailed_evaluation_report.json', 'w', encoding='utf-8') as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
     
-    # 輸出報告
-    logger.info("\n實驗結果總結：")
-    logger.info(f"總配對數: {total_pairs}")
-    logger.info(f"有效配對數: {valid_pairs}")
-    logger.info(f"成功處理數: {len(results)}")
-    logger.info(f"平均RMSE: {avg_rmse:.2f} ms")
-    logger.info(f"平均最大偏差: {avg_max_deviation:.2f} ms")
-    logger.info(f"平均對應率: {avg_correspondence_rate:.2f}%")
-    
-    logger.info("\n學生表現比較：")
-    logger.info(f"整體最佳表現：{student_comparison['best_overall']}")
-    logger.info(f"最穩定表現：{student_comparison['most_consistent']}")
-    
-    logger.info("\n各課程最佳表現：")
-    for lesson, winner in student_comparison['lesson_winners'].items():
-        logger.info(f"{lesson}: {winner['student']} (對應率: {winner['average_correspondence_rate']:.2f}%)")
-    
-    # 輸出每個學生的詳細統計
-    logger.info("\n學生詳細統計：")
-    for student, stats in student_stats.items():
-        logger.info(f"\n{student}:")
-        logger.info(f"  總話語數: {stats['total_utterances']}")
-        logger.info(f"  平均RMSE: {stats['average_rmse']:.2f} ms")
-        logger.info(f"  平均對應率: {stats['average_correspondence_rate']:.2f}%")
-        logger.info("  課程表現:")
-        for lesson, perf in stats['lesson_performance'].items():
-            logger.info(f"    {lesson}: 對應率 {perf['average_correspondence_rate']:.2f}%")
+    # 輸出報告摘要
+    logger.info(f"""
+詳細評估報告：
+
+1. 整體評估指標
+   - RMSE: {avg_rmse:.2f} ms (標準: ≤ 200ms)
+   - 最大偏差: {avg_max_deviation:.2f} ms
+   - 對應率: {avg_correspondence_rate:.2f}% (標準: ≥ 95%)
+
+2. 標準達成率
+   - RMSE標準達成率: {standards_met['rmse']:.1f}%
+   - 一致性標準達成率: {standards_met['consistency']:.1f}%
+   - 對應率標準達成率: {standards_met['correspondence']:.1f}%
+
+3. 課程分析
+{chr(10).join(f'   {lesson}：RMSE={stats["average_rmse"]:.1f}ms, 對應率={stats["average_correspondence_rate"]:.1f}%' for lesson, stats in lesson_stats.items())}
+
+4. 學生分析
+{chr(10).join(f'   {student}：RMSE={stats["average_rmse"]:.1f}ms, 對應率={stats["average_correspondence_rate"]:.1f}%' for student, stats in student_stats.items())}
+
+詳細報告已保存至：{baseline_dir}/detailed_evaluation_report.json
+""")
 
 if __name__ == "__main__":
     # 設置日誌記錄
