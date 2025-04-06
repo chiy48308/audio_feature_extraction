@@ -1,0 +1,6 @@
+{
+  "student_file": "preprocess_student_audio/Lesson03_Man_Student01_utterance03_features.npy",
+  "teacher_file": "preprocess_teacher_audio/Lesson03_Man_Teacher_utterance03_features.npy",
+  "evaluation": {
+    "rmse": 230.25750480390104,
+    "max_deviation": 

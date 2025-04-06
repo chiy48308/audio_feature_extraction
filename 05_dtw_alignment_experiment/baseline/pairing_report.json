@@ -1,0 +1,1116 @@
+{
+  "timestamp": "2025-04-05T19:01:44.225190",
+  "total_utterances": 111,
+  "pairs": [
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance25",
+      "teacher_file": "Lesson03_Man_Teacher_utterance25_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance25_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance22",
+      "teacher_file": "Lesson03_Man_Teacher_utterance22_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance22_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance07",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance07_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance07_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance21",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance21_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance21_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance15",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance15_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance15_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance12",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance12_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance12_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson03_Man_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson03_Man_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance24",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance24_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance24_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance10",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance10_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance10_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance23",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance23_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance23_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance17",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance17_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance17_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance14",
+      "teacher_file": "Lesson03_Man_Teacher_utterance14_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance14_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance13",
+      "teacher_file": "Lesson03_Man_Teacher_utterance13_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance13_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance13",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance13_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance13_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance20",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance20_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance20_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance14",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance14_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance14_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance23",
+      "teacher_file": "Lesson03_Man_Teacher_utterance23_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance23_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance24",
+      "teacher_file": "Lesson03_Man_Teacher_utterance24_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance24_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance12",
+      "teacher_file": "Lesson03_Man_Teacher_utterance12_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance12_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance15",
+      "teacher_file": "Lesson03_Man_Teacher_utterance15_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance15_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson03_Man_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance07",
+      "teacher_file": "Lesson03_Man_Teacher_utterance07_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance07_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance22",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance22_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance22_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance16",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance16_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance16_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance25",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance25_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance25_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance11",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance11_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance11_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance18",
+      "teacher_file": "Lesson03_Man_Teacher_utterance18_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance18_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance09",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance09_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance09_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Pete",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson01_Pete_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson01_Pete_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance19",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance19_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance19_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance19",
+      "teacher_file": "Lesson03_Man_Teacher_utterance19_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance19_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance08",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance08_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance08_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Pete",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson01_Pete_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson01_Pete_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Pete",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson01_Pete_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson01_Pete_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance18",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance18_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance18_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance18",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance18_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance18_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance09",
+      "teacher_file": "Lesson03_Man_Teacher_utterance09_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance09_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Pete",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson01_Pete_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson01_Pete_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance08",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance08_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance08_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance19",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance19_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance19_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance08",
+      "teacher_file": "Lesson03_Man_Teacher_utterance08_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance08_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Jonathan",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson02_Jonathan_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson02_Jonathan_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Pete",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson02_Pete_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson02_Pete_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance09",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance09_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance09_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Pete",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson01_Pete_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson01_Pete_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance22",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance22_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance22_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance16",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance16_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance16_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance25",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance25_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance25_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance11",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance11_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance11_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance21",
+      "teacher_file": "Lesson03_Man_Teacher_utterance21_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance21_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance01",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance01_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance01_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance06",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance06_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance06_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance17",
+      "teacher_file": "Lesson03_Man_Teacher_utterance17_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance17_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance10",
+      "teacher_file": "Lesson03_Man_Teacher_utterance10_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance10_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance13",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance13_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance13_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance20",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance20_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance20_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance14",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance14_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance14_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson03_Man_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson03_Man_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance20",
+      "teacher_file": "Lesson03_Man_Teacher_utterance20_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance20_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson02_Anna",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson02_Anna_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson02_Anna_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance05",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance05_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance05_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance24",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance24_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance24_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance10",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance10_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance10_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson01_Anna",
+      "utterance": "utterance02",
+      "teacher_file": "Lesson01_Anna_Teacher_utterance02_features.npy",
+      "student_files": [
+        "Lesson01_Anna_Student01_utterance02_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance23",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance23_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance23_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance17",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance17_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance17_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Anna",
+      "utterance": "utterance21",
+      "teacher_file": "Lesson03_Anna_Teacher_utterance21_features.npy",
+      "student_files": [
+        "Lesson03_Anna_Student01_utterance21_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance15",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance15_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance15_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance12",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance12_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance12_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance03",
+      "teacher_file": "Lesson03_Man_Teacher_utterance03_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance03_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance04",
+      "teacher_file": "Lesson03_Man_Teacher_utterance04_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance04_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance07",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance07_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance07_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Marsha",
+      "utterance": "utterance00",
+      "teacher_file": "Lesson03_Marsha_Teacher_utterance00_features.npy",
+      "student_files": [
+        "Lesson03_Marsha_Student01_utterance00_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance11",
+      "teacher_file": "Lesson03_Man_Teacher_utterance11_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance11_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    },
+    {
+      "lesson": "Lesson03_Man",
+      "utterance": "utterance16",
+      "teacher_file": "Lesson03_Man_Teacher_utterance16_features.npy",
+      "student_files": [
+        "Lesson03_Man_Student01_utterance16_features.npy"
+      ],
+      "student_count": 1,
+      "status": "有效"
+    }
+  ]
+}
