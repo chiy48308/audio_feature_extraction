@@ -28,50 +28,70 @@
 
 ## 評估指標
 
-1. 特徵穩定性
-   - 基頻標準差
-   - MFCC係數變化
-   - 能量特徵一致性
+### 1. 對齊誤差範圍
+- **指標**：對齊偏差（RMSE）
+- **目標閾值**：RMSE ≤ 200 毫秒
+- **計算方法**：計算預測對齊點與真實對齊點之間的均方根誤差
+- **評估標準**：
+  - 優秀：RMSE < 150ms
+  - 良好：150ms ≤ RMSE ≤ 200ms
+  - 需改進：RMSE > 200ms
 
-2. 處理效率
-   - 平均處理時間
-   - 內存使用情況
-   - CPU使用率
+### 2. 對齊一致性
+- **指標**：預測起訖點 vs. 標註對齊度
+- **目標閾值**：每句偏差 < 250ms 且無過早／過晚切點
+- **計算方法**：
+  - 計算每個音頻段的起始和結束點偏差
+  - 統計異常切點（過早或過晚）的數量
+- **評估標準**：
+  - 優秀：無異常切點，且95%以上的對齊點偏差<200ms
+  - 良好：異常切點≤3個，且90%以上的對齊點偏差<250ms
+  - 需改進：其他情況
 
-3. 特徵質量
-   - 信噪比
-   - 特徵完整性
-   - 異常值比例
+### 3. 語音－文本對應率
+- **指標**：正確對齊比例（alignment accuracy）
+- **目標閾值**：對應準確率 ≥ 95%
+- **計算方法**：
+  - 計算正確對齊的段落數量與總段落數量的比率
+  - 正確對齊定義：起訖點偏差均<250ms
+- **評估標準**：
+  - 優秀：準確率 ≥ 97%
+  - 良好：95% ≤ 準確率 < 97%
+  - 需改進：準確率 < 95%
 
 ## 實驗結果
 
 實驗結果將保存在以下文件中：
 
-1. JSON格式的詳細數據
-   - `teacher_baseline_results.json`
-   - `teacher_improved_results.json`
-   - `student_baseline_results.json`
-   - `student_improved_results.json`
+1. 詳細評估結果
+   - `alignment_evaluation_[timestamp].csv`：包含每個音頻文件的詳細評估指標
+   - `alignment_summary_[timestamp].csv`：包含基準版本和改進版本的統計摘要
 
-2. 可視化結果
-   - `teacher_comparison/comparison_plots.png`
-   - `student_comparison/comparison_plots.png`
-
-3. 分析報告
-   - `teacher_comparison/comparison_report.json`
-   - `student_comparison/comparison_report.json`
+2. CSV文件欄位說明
+   - `method`：使用的方法（baseline/improved）
+   - `audio_file`：音頻文件名
+   - `rmse_ms`：對齊RMSE（毫秒）
+   - `rmse_within_threshold`：是否符合RMSE閾值要求
+   - `consistency_rate`：對齊一致性比率
+   - `abnormal_points`：異常切點數量
+   - `accuracy_rate`：對應準確率
+   - `meets_accuracy_threshold`：是否達到準確率要求
 
 ## 使用方法
 
-1. 運行實驗：
+1. 運行特徵提取實驗：
    ```bash
    python feature_extraction_comparison.py
    ```
 
-2. 查看結果：
-   - 檢查生成的JSON文件了解詳細數據
-   - 查看PNG圖表直觀比較結果
-   - 閱讀分析報告了解具體改進效果
+2. 運行評估指標計算：
+   ```bash
+   python evaluation_metrics.py
+   ```
+
+3. 查看結果：
+   - 檢查生成的CSV文件了解詳細評估指標
+   - 查看統計摘要了解整體改進效果
 
 ## 注意事項
 
@@ -88,6 +108,6 @@
    - 處理失敗的文件會被單獨列出
 
 3. 結果解釋：
-   - 較低的標準差表示更好的穩定性
-   - 處理時間的減少表示效率提升
-   - 特徵完整性的提高表示質量改進 
+   - RMSE越低表示對齊越準確
+   - 一致性比率越高表示對齊越穩定
+   - 對應準確率越高表示特徵提取效果越好 
