@@ -1,26 +1,67 @@
-# 實驗資料夾
-00_audio_data_collection_experiment/
-01_audio_volume_accurator_experiment/
-02_audio_noise_reducer_experiment/
-03_audio_vad_experiment/
-04_feature_extraction_experiment/
+# 實驗和數據目錄
+raw_audio/
+student_audio/
+teacher_audio/
+preprocess_teacher_audio/
+preprocess_student_audio/
+baseline/
+feature_evaluation/
+
+# 虛擬環境
+.venv/
+venv/
+env/
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日誌文件
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 臨時文件
+*.tmp
+temp/
+.coverage
+htmlcov/
 
 # 音頻文件
 *.wav
 *.mp3
 *.ogg
+*.flac
 
-# 系統文件
-.DS_Store
-__pycache__/
-*.pyc
-
-# 臨時文件和日誌
-*.log
-*.tmp
-temp/
-logs/
-
-# IDE配置
-.vscode/
-.idea/ 
+# 實驗結果
+*.csv
+*.json
+*.xlsx
+*.pdf 
