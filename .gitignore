@@ -1,0 +1,87 @@
+# 音頻文件
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.m4a
+*.aac
+
+# 數據文件
+*.csv
+*.xlsx
+*.xls
+*.db
+*.sqlite
+
+# 預處理和輸出文件
+processed_audio/
+preprocessed/
+output/
+results/
+vad_experiment_results/
+audio_analysis_results/
+
+# Python 虛擬環境
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 系統文件
+.DS_Store
+.env
+
+# 大型模型文件
+pretrained_models/
+*.pt
+*.pth
+*.ckpt
+*.model
+
+# 臨時文件
+temp/
+tmp/
+*.tmp
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 測試
+.coverage
+htmlcov/
+.pytest_cache/
+test_audio.wav
+
+# 環境
+.env
+.venv
+env/
+venv/
+ENV/
+
+# 其他
+.DS_Store
+Thumbs.db 
