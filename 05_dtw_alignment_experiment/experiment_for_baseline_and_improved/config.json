@@ -1,0 +1,19 @@
+{
+    "audio_settings": {
+        "sr": 22050,
+        "frame_length": 1024,
+        "hop_length": 256,
+        "n_mfcc": 13,
+        "pre_emphasis": 0.97
+    },
+    "experiment_settings": {
+        "save_intermediate_results": true,
+        "generate_plots": true,
+        "plot_formats": ["png", "pdf"]
+    },
+    "paths": {
+        "teacher_audio_dir": "preprocess_teacher_audio",
+        "student_audio_dir": "preprocess_student_audio",
+        "output_dir": "experiment_for_baseline_and_improved"
+    }
+} 
